@@ -1,6 +1,8 @@
-#include "LanguageModel.h"
-#include "PPMLanguageModel.h"
+#include "LanguageModelling/LanguageModel.h"
+#include "LanguageModelling/PPMLanguageModel.h"
+#include "Alphabet/AlphabetMap.h"
 #include <vector>
+#include <fstream>
 #include <iostream>
 
 using namespace Dasher;
@@ -29,63 +31,85 @@ static unsigned long getNorm(unsigned int numOfSymbols) {
 	return iNonUniformNorm;
 }
 
+//Reading alphabet definitions from xml files has been left out because it is irrelevant for the core data structure
+//and algorithm. For testing purposes, simply hardcode a small alphabet.
+CAlphabetMap* getDefaultAlphabetMap() {
+	CAlphabetMap* map = new CAlphabetMap();
+	map->Add("a", 1);
+	map->Add("b", 2);
+	map->Add("c", 3);
+	map->Add("d", 4);
+	return map;
+}
+
+//construct a CAlphabetMap::SymbolStream by passing a std::istream to its constructor (see CTrainer::Parse)
+//adapted from CTrainer::Train
+void train(CLanguageModel* model, CAlphabetMap* alphabetMap, CAlphabetMap::SymbolStream &syms) {
+	CLanguageModel::Context sContext = model->CreateEmptyContext();
+	for(symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
+		model->LearnSymbol(sContext, sym);
+	}
+	model->ReleaseContext(sContext);
+}
+
 int main() {
-	unsigned int numOfSymbols = 10;
+	unsigned int numOfSymbols = 4;
 	unsigned long norm = getNorm(numOfSymbols);
 	
 	CPPMLanguageModel lm(numOfSymbols);
-	CLanguageModel::Context context;
-	context = lm.CreateEmptyContext();
-	lm.LearnSymbol(context, 5);
-	lm.LearnSymbol(context, 8);
-	lm.LearnSymbol(context, 4);
-	lm.LearnSymbol(context, 3);
-	lm.LearnSymbol(context, 3);
-	lm.LearnSymbol(context, 4);
-	lm.LearnSymbol(context, 2);
-	lm.LearnSymbol(context, 5);
-	lm.LearnSymbol(context, 1);
-	lm.LearnSymbol(context, 1);
-	lm.LearnSymbol(context, 7);
-	lm.LearnSymbol(context, 6);
-	lm.LearnSymbol(context, 5);
-	lm.LearnSymbol(context, 4);
-	lm.LearnSymbol(context, 3);
-	lm.LearnSymbol(context, 3);
-	lm.LearnSymbol(context, 2);
-	lm.LearnSymbol(context, 3);
-	lm.LearnSymbol(context, 2);
-	lm.LearnSymbol(context, 6);
-	lm.LearnSymbol(context, 8);
-	lm.LearnSymbol(context, 3);
-	lm.LearnSymbol(context, 4);
+	CAlphabetMap* alphabetMap = getDefaultAlphabetMap();
+	std::ifstream trainingTextStream;
+	trainingTextStream.open("training.txt");
+	CAlphabetMap::SymbolStream symStream(trainingTextStream);
+	train(&lm, alphabetMap, symStream);
+	trainingTextStream.close();
+	delete alphabetMap;
 	
+	
+	
+	CLanguageModel::Context context;
 	std::vector<unsigned int> probs;
 	
-	
+	std::cout << "Entering 'b':\n";
+	context = lm.CreateEmptyContext();
+	lm.EnterSymbol(context, 2);
 	lm.GetProbs(context, probs, norm, 0);
 	printVector(probs);
+	lm.ReleaseContext(context);
+	
+	std::cout << "\nEntering 'a':\n";
+	context = lm.CreateEmptyContext();
+	lm.EnterSymbol(context, 1);
+	lm.GetProbs(context, probs, norm, 0);
+	printVector(probs);
+	lm.ReleaseContext(context);
+	
+	std::cout << "\nEntering 'bc':\n";
+	context = lm.CreateEmptyContext();
+	lm.EnterSymbol(context, 2);
+	lm.EnterSymbol(context, 3);
+	lm.GetProbs(context, probs, norm, 0);
+	printVector(probs);
+	lm.ReleaseContext(context);
+	
+	std::cout << "\nEntering 'ddc':\n";
+	context = lm.CreateEmptyContext();
+	lm.EnterSymbol(context, 4);
+	lm.EnterSymbol(context, 4);
+	lm.EnterSymbol(context, 3);
+	lm.GetProbs(context, probs, norm, 0);
+	printVector(probs);
+	lm.ReleaseContext(context);
+	
+	std::cout << "\nEntering 'bdca':\n";
+	context = lm.CreateEmptyContext();
+	lm.EnterSymbol(context, 2);
+	lm.EnterSymbol(context, 4);
+	lm.EnterSymbol(context, 3);
+	lm.EnterSymbol(context, 1);
+	lm.GetProbs(context, probs, norm, 0);
+	printVector(probs);
+	lm.ReleaseContext(context);
+	
 	return 0;
 }
-
-
-//from Src/Test/LanguageModelling/main.cpp - outdated, doesn't work anymore because some classes don't even exist
-/*string userlocation = "/usr/local/share/dasher/";
-string filename = "alphabet.english.xml";
-vector < string > vFileNames;
-vFileNames.push_back(filename);
-
-// Set up the CAlphIO
-std::auto_ptr < CAlphIO > ptrAlphIO(new CAlphIO("", userlocation, vFileNames));
-
-string strID = "English alphabet with lots of punctuation";
-const CAlphIO::AlphInfo & AlphInfo = ptrAlphIO->GetInfo(strID);
-
-// Create the Alphabet that converts plain text to symbols
-std::auto_ptr < CAlphabet > ptrAlphabet(new CAlphabet(AlphInfo));
-
-// DJW - add some functionality to CAlphabet to get the CSymbolAlphabet
-CSymbolAlphabet alphabet(ptrAlphabet->GetNumberSymbols());
-alphabet.SetSpaceSymbol(ptrAlphabet->GetSpaceSymbol());
-
-CPPMLanguageModel lm(alphabet);*/

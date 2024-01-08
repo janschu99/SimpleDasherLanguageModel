@@ -9,10 +9,10 @@
 #ifndef __PPMLanguageModel_h__
 #define __PPMLanguageModel_h__
 
-//#include "DasherTypes.h"
-#include "NoClones.h"
+#include "../Common/DasherTypes.h"
+#include "../Common/NoClones.h"
 #include "LanguageModel.h"
-#include "PooledAlloc.h"
+#include "../Common/PooledAlloc.h"
 #include "stdlib.h"
 #include <vector>
 #include <string>
@@ -21,16 +21,6 @@
 #include <map>
 
 namespace Dasher {
-	//from Common/Types/int.h:
-#ifdef _WIN32
-	typedef __int64 int64;
-#else
-	typedef long long int int64;
-#endif
-	
-	//from DasherTypes.h:
-	typedef int64 myint; //DasherModel co-ordinates are of type myint
-	typedef int symbol;
 
   ///
   /// \ingroup LM

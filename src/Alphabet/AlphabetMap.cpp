@@ -9,47 +9,14 @@ using namespace std;
 
 #define UNKNOWN_SYMBOL 0
 
-class utf8_length {
-	public:
-		utf8_length();
-		int operator[](const unsigned char) const;
-		int max_length;
-	private:
-		int utf8_count_array[0x100];
-};
-static utf8_length m_utf8_count_array;
-
-utf8_length::utf8_length() {
-	int i;
-	memset(utf8_count_array, 0, sizeof(utf8_count_array));
-	for (i = 0x00; i<=0x7f; ++i)
-		utf8_count_array[i] = 1;
-	for (i = 0xc0; i<=0xdf; ++i)
-		utf8_count_array[i] = 2;
-	for (i = 0xe0; i<=0xef; ++i)
-		utf8_count_array[i] = 3;
-	for (i = 0xf0; i<=0xf7; ++i)
-		utf8_count_array[i] = 4;
-	max_length = 4;
-	/* The following would be valid according to RFC 2279 which was rendered
-	 * obsolete by RFC 3629
-	 * for (i = 0xf8; i <= 0xfb; ++i) utf8_count_array[i] = 5;
-	 * for (i = 0xfc; i <= 0xfd; ++i) utf8_count_array[i] = 6;
-	 * max_length = 6;
-	 *
-	 * and from RFC 3629:
-	 * o  The octet values C0, C1, F5 to FF never appear.
-	 */
-	utf8_count_array[0xc0] = utf8_count_array[0xc1] = 0;
-	for (i = 0xf5; i<=0xff; ++i)
-		utf8_count_array[i] = 0;
+int CAlphabetMap::SymbolStream::getUtf8Count(int pos) {
+	if (pos<=0x7f) return 1;
+	if (pos<=0xc1) return 0;
+	if (pos<=0xdf) return 2;
+	if (pos<=0xef) return 3;
+	if (pos<=0xf4) return 4;
+	return 0;
 }
-
-int utf8_length::operator[](const unsigned char i) const {
-	return utf8_count_array[i];
-}
-
-////////////////////////////////////////////////////////////////////////////
 
 CAlphabetMap::SymbolStream::SymbolStream(std::istream &_in) :
 		pos(0), len(0), in(_in) {
@@ -71,7 +38,7 @@ void CAlphabetMap::SymbolStream::readMore() {
 
 inline int CAlphabetMap::SymbolStream::findNext() {
 	for (;;) {
-		if (pos+m_utf8_count_array.max_length>len) {
+		if (pos+4>len) { //4 is max length of an UTF-8 char
 			//may need more bytes for next char
 			if (pos) {
 				//shift remaining bytes to beginning
@@ -84,16 +51,16 @@ inline int CAlphabetMap::SymbolStream::findNext() {
 		}
 		//if still don't have any chars after attempting to read more...EOF!
 		if (pos==len) return 0; //EOF
-		if (int numChars = m_utf8_count_array[buf[pos]]) {
+		if (int numChars = getUtf8Count(buf[pos])) {
 			if (pos+numChars>len) {
 				//no more bytes in file (would have tried to read earlier), but not enough for char
-				printf("File ends with incomplete UTF-8 character beginning 0x%x (expecting %i bytes but only %i)",
+				printf("File ends with incomplete UTF-8 character beginning 0x%x (expecting %i bytes but only %li)\n",
 						static_cast<unsigned int>(buf[pos]&0xff), numChars, len-pos);
 				return 0;
 			}
 			return numChars;
 		}
-		printf("Read invalid UTF-8 character 0x%x", static_cast<unsigned int>(buf[pos]&0xff));
+		printf("Read invalid UTF-8 character 0x%x\n", static_cast<unsigned int>(buf[pos]&0xff));
 		++pos;
 	}
 }
@@ -116,8 +83,7 @@ symbol CAlphabetMap::SymbolStream::next(const CAlphabetMap *map) {
 	return sym;
 }
 
-void CAlphabetMap::GetSymbols(std::vector<symbol> &Symbols,
-		const std::string &Input) const {
+void CAlphabetMap::GetSymbols(std::vector<symbol> &Symbols, const std::string &Input) const {
 	std::istringstream in(Input);
 	SymbolStream syms(in);
 	for (symbol sym; (sym = syms.next(this))!=-1;)

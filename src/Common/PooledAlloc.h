@@ -12,7 +12,6 @@ class CPooledAlloc {
 	public:
 		// Construct with given block size
 		CPooledAlloc(size_t iBlockSize);
-		~CPooledAlloc();
 		// Return an uninitialized object
 		T* Alloc();
 		// Return an object to the pool
@@ -27,11 +26,6 @@ class CPooledAlloc {
 template<typename T>
 CPooledAlloc<T>::CPooledAlloc(size_t iSize) :
 		m_Alloc(iSize) {
-}
-
-template<typename T>
-CPooledAlloc<T>::~CPooledAlloc() {
-	//empty
 }
 
 template<typename T>

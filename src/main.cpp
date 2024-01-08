@@ -1,4 +1,3 @@
-#include "LanguageModelling/LanguageModel.h"
 #include "LanguageModelling/PPMLanguageModel.h"
 #include "Alphabet/AlphabetMap.h"
 #include <vector>
@@ -111,8 +110,8 @@ CAlphabetMap* getLargeAlphabetMap() {
 
 //construct a CAlphabetMap::SymbolStream by passing a std::istream to its constructor (see CTrainer::Parse)
 //adapted from CTrainer::Train
-void train(CLanguageModel* model, CAlphabetMap* alphabetMap, CAlphabetMap::SymbolStream &syms) {
-	CLanguageModel::Context sContext = model->CreateEmptyContext();
+void train(CPPMLanguageModel* model, CAlphabetMap* alphabetMap, CAlphabetMap::SymbolStream &syms) {
+	CPPMLanguageModel::Context sContext = model->CreateEmptyContext();
 	for(symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
 		model->LearnSymbol(sContext, sym);
 	}
@@ -132,9 +131,7 @@ int main() {
 	trainingTextStream.close();
 	delete alphabetMap;
 	
-	
-	
-	CLanguageModel::Context context;
+	CPPMLanguageModel::Context context;
 	std::vector<unsigned int> probs;
 	
 	std::cout << "Entering 'b':\n";

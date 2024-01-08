@@ -10,7 +10,7 @@ using namespace Dasher;
 using namespace std;
 
 CAbstractPPM::CAbstractPPM(int iNumSyms, CPPMnode *pRoot, int iMaxOrder) :
-		CLanguageModel(iNumSyms), m_pRoot(pRoot), m_iMaxOrder(
+		m_iNumSyms(iNumSyms), m_pRoot(pRoot), m_iMaxOrder(
 				iMaxOrder<0 ?
 						5/*GetLongParameter(LP_LM_MAX_ORDER)*/: iMaxOrder), bUpdateExclusion(
 				1/*GetLongParameter(LP_LM_UPDATE_EXCLUSION)*/!=0), m_ContextAlloc(
@@ -61,10 +61,10 @@ void CPPMLanguageModel::GetProbs(Context context,
 					pSymbol!=pTemp->end(); pSymbol++) {
 				if (!(exclusions[(*pSymbol)->sym]&&doExclusion)) {
 					exclusions[(*pSymbol)->sym] = 1;
-
+					
 					unsigned int p = static_cast<int64>(size_of_slice)
 							*(100*(*pSymbol)->count-beta)/(100*iTotal+alpha);
-
+					
 					probs[(*pSymbol)->sym] += p;
 					iToSpend -= p;
 				}
@@ -77,16 +77,6 @@ void CPPMLanguageModel::GetProbs(Context context,
 	int symbolsleft = 0;
 	for (int i = 1; i<iNumSymbols; i++)
 		if (!(exclusions[i]&&doExclusion)) symbolsleft++;
-//      std::ostringstream str;
-//      for (sym=0;sym<modelchars;sym++)
-//              str << probs[sym] << " ";
-//      str << std::endl;
-//      DASHER_TRACEOUTPUT("probs %s",str.str().c_str());
-//      std::ostringstream str2;
-//      for (sym=0;sym<modelchars;sym++)
-//              str2 << valid[sym] << " ";
-//      str2 << std::endl;
-//      DASHER_TRACEOUTPUT("valid %s",str2.str().c_str());
 	for (int i = 1; i<iNumSymbols; i++) {
 		if (!(exclusions[i]&&doExclusion)) {
 			unsigned int p = size_of_slice/symbolsleft;
@@ -147,117 +137,6 @@ void CAbstractPPM::LearnSymbol(Context c, int Symbol) {
 		context.head = context.head->vine;
 		context.order--;
 	}
-}
-
-void CAbstractPPM::dumpSymbol(symbol sym) {
-	if ((sym<=32)||(sym>=127)) printf("<%d>", sym);
-	else printf("%c", sym);
-}
-
-void CAbstractPPM::dumpString(char *str, int pos, int len) {
-// Dump the string STR starting at position POS
-	char cc;
-	int p;
-	for (p = pos; p<pos+len; p++) {
-		cc = str[p];
-		if ((cc<=31)||(cc>=127)) printf("<%d>", cc);
-		else printf("%c", cc);
-	}
-}
-
-void CAbstractPPM::dumpTrie(CAbstractPPM::CPPMnode *t, int d) {
-// diagnostic display of the PPM trie from node t and deeper
-//TODO
-	/*
-	 dchar debug[256];
-	 int sym;
-	 CPPMnode *s;
-	 Usprintf( debug,TEXT("%5d %7x "), d, t );
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 if (t < 0) // pointer to input
-	 printf( "                     <" );
-	 else {
-	 Usprintf(debug,TEXT( " %3d %5d %7x  %7x  %7x    <"), t->sym,t->count, t->vine, t->child, t->next );
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 }
-
-	 dumpString( dumpTrieStr, 0, d );
-	 Usprintf( debug,TEXT(">\n") );
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 if (t != 0) {
-	 s = t->child;
-	 while (s != 0) {
-	 sym =s->sym;
-
-	 dumpTrieStr [d] = sym;
-	 dumpTrie( s, d+1 );
-	 s = s->next;
-	 }
-	 }
-	 */
-}
-
-void CAbstractPPM::dump() {
-// diagnostic display of the whole PPM trie
-// TODO:
-	/*
-	 dchar debug[256];
-	 Usprintf(debug,TEXT(  "Dump of Trie : \n" ));
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 Usprintf(debug,TEXT(   "---------------\n" ));
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 Usprintf( debug,TEXT(  "depth node     symbol count  vine   child      next   context\n") );
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 dumpTrie( root, 0 );
-	 Usprintf( debug,TEXT(  "---------------\n" ));
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 Usprintf(debug,TEXT( "\n" ));
-	 //TODO: Uncomment this when headers sort out
-	 //DebugOutput(debug);
-	 */
-}
-
-bool CAbstractPPM::eq(CAbstractPPM *other) {
-	std::map<CPPMnode*, CPPMnode*> equivs;
-	if (!m_pRoot->eq(other->m_pRoot, equivs)) return false;
-	//have first & second being equivalent, for all entries in map, except vine ptrs not checked.
-	for (std::map<CPPMnode*, CPPMnode*>::iterator it = equivs.begin(); it!=equivs.end(); it++) {
-		CPPMnode *myVine = it->first->vine;
-		CPPMnode *oVine = it->second->vine;
-		if (myVine==NULL) {
-			if (oVine==NULL) continue;
-			return false;
-		} else if (oVine==NULL) return false;
-		std::map<CPPMnode*, CPPMnode*>::iterator found = equivs.find(myVine);
-		if (found->second!=oVine) return false;
-	}
-	return true;
-}
-
-/// PPMnode definitions
-bool CAbstractPPM::CPPMnode::eq(CAbstractPPM::CPPMnode *other,
-		std::map<CPPMnode*, CPPMnode*> &equivs) {
-	if (sym!=other->sym) return false;
-	if (count!=other->count) return false;
-	//check children....but allow for different orders by sorting into symbol order
-	std::map<symbol, CPPMnode*> thisCh, otherCh;
-	for (ChildIterator it = children(); it!=end(); it++)
-		thisCh[(*it)->sym] = *it;
-	for (ChildIterator it = other->children(); it!=other->end(); it++)
-		otherCh[(*it)->sym] = *it;
-	if (thisCh.size()!=otherCh.size()) return false;
-	for (std::map<symbol, CPPMnode*>::iterator it1 = thisCh.begin(), it2 =
-			otherCh.begin(); it1!=thisCh.end(); it1++, it2++)
-		if (!it1->second->eq(it2->second, equivs)) return false; //different - note eq checks symbol
-	equivs.insert(std::pair<CPPMnode*, CPPMnode*>(this, other));
-	return true;
 }
 
 #define MAX_RUN 4
@@ -373,109 +252,4 @@ CAbstractPPM::CPPMnode* CPPMLanguageModel::makeNode(int sym) {
 	res->sym = sym;
 	++NodesAllocated;
 	return res;
-}
-
-struct BinaryRecord {
-		int m_iIndex;
-		int m_iChild;
-		int m_iNext;
-		int m_iVine;
-		unsigned short int m_iCount;
-		short int m_iSymbol;
-};
-
-bool CPPMLanguageModel::WriteToFile(std::string strFilename) {
-	std::map<CPPMnode*, int> mapIdx;
-	int iNextIdx(1); // Index of 0 means NULL;
-	std::ofstream oOutputFile(strFilename.c_str());
-	RecursiveWrite(m_pRoot, NULL, &mapIdx, &iNextIdx, &oOutputFile);
-	oOutputFile.close();
-	return false;
-}
-
-bool CPPMLanguageModel::RecursiveWrite(CPPMnode *pNode, CPPMnode *pNextSibling,
-		std::map<CPPMnode*, int> *pmapIdx, int *pNextIdx,
-		std::ofstream *pOutputFile) {
-	// Dump node here
-	BinaryRecord sBR;
-	sBR.m_iIndex = GetIndex(pNode, pmapIdx, pNextIdx);
-	sBR.m_iNext = GetIndex(pNextSibling, pmapIdx, pNextIdx);
-	sBR.m_iVine = GetIndex(pNode->vine, pmapIdx, pNextIdx);
-	sBR.m_iCount = pNode->count;
-	sBR.m_iSymbol = pNode->sym;
-	ChildIterator it = pNode->children();
-	CPPMnode *pCurrentChild = (it==pNode->end()) ? NULL : *it++;
-	sBR.m_iChild = GetIndex(pCurrentChild, pmapIdx, pNextIdx);
-	pOutputFile->write(reinterpret_cast<char*>(&sBR), sizeof(BinaryRecord));
-	if (pCurrentChild) {
-		for (CPPMnode *pNextChild; it!=pNode->end(); pCurrentChild = pNextChild) {
-			pNextChild = *it++;
-			RecursiveWrite(pCurrentChild, pNextChild, pmapIdx, pNextIdx, pOutputFile);
-		}
-		RecursiveWrite(pCurrentChild, NULL, pmapIdx, pNextIdx, pOutputFile);
-	}
-	return true;
-}
-
-int CPPMLanguageModel::GetIndex(CPPMnode *pAddr, std::map<CPPMnode*, int> *pmapIdx, int *pNextIdx) {
-	int iIndex;
-	if (pAddr==NULL) iIndex = 0;
-	else {
-		std::map<CPPMnode*, int>::iterator it(pmapIdx->find(pAddr));
-		if (it==pmapIdx->end()) {
-			iIndex = *pNextIdx;
-			pmapIdx->insert(std::pair<CPPMnode*, int>(pAddr, iIndex));
-			++(*pNextIdx);
-		} else iIndex = it->second;
-	}
-	return iIndex;
-}
-
-bool CPPMLanguageModel::ReadFromFile(std::string strFilename) {
-	std::ifstream oInputFile(strFilename.c_str());
-	//map from file index, to address of node object with that index
-	std::map<int, CPPMnode*> oMap;
-	//map from file index, to address of *parent* for that node
-	// - only stored for the child that will *next* be read.
-	std::map<int, CPPMnode*> parentMap;
-	BinaryRecord sBR;
-	bool bStarted(false);
-	while (!oInputFile.eof()) {
-		oInputFile.read(reinterpret_cast<char*>(&sBR), sizeof(BinaryRecord));
-		CPPMnode *pCurrent(GetAddress(sBR.m_iIndex, &oMap));
-		pCurrent->vine = GetAddress(sBR.m_iVine, &oMap);
-		pCurrent->count = sBR.m_iCount;
-		pCurrent->sym = sBR.m_iSymbol;
-		//if this node has a parent...
-		std::map<int, CPPMnode*>::iterator it(parentMap.find(sBR.m_iIndex));
-		if (it!=parentMap.end()) {
-			CPPMnode *parent = it->second;
-			parent->AddChild(pCurrent, GetSize());
-			//erase the record of parent hood, now we've realized it
-			parentMap.erase(it);
-			//add mapping for the _next_ sibling; since siblings will be read in the order
-			// they were written out, when the next sibling is read it will find the mapping.
-			if (sBR.m_iNext) parentMap.insert(pair<int, CPPMnode*>(sBR.m_iNext, parent));
-		}
-		//if the node has children, record for the benefit of the first child
-		// this node's address...(said child will be the first one read)
-		if (sBR.m_iChild) parentMap.insert(pair<int, CPPMnode*>(sBR.m_iChild, pCurrent));
-		if (!bStarted) {
-			m_pRoot = pCurrent;
-			bStarted = true;
-		}
-	}
-	oInputFile.close();
-	return false;
-}
-
-CPPMLanguageModel::CPPMnode* CPPMLanguageModel::GetAddress(int iIndex, std::map<int, CPPMnode*> *pMap) {
-	if (iIndex==0) return NULL;
-	std::map<int, CPPMnode*>::iterator it(pMap->find(iIndex));
-	if (it==pMap->end()) {
-		CPPMnode *pNewNode;
-		pNewNode = m_NodeAlloc.Alloc();
-		pMap->insert(std::pair<int, CPPMnode*>(iIndex, pNewNode));
-		return pNewNode;
-	} else return it->second;
 }

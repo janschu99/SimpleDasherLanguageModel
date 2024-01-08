@@ -1,30 +1,13 @@
-// AlphabetMap.h
-//
-/////////////////////////////////////////////////////////////////////////////
-//
-// Copyright (c) 2002 Iain Murray
-//
-/////////////////////////////////////////////////////////////////////////////
-
-
 #ifndef __AlphabetMap_h__
 #define __AlphabetMap_h__
 
-#ifndef _WIN32
-#include <sys/types.h>
-#endif
-
 #include "../Common/DasherTypes.h"
-
 #include <vector>
 #include <string>
 
 namespace Dasher {
-  class CAlphabetMap;
-} 
-
-/// \ingroup Alphabet
-/// \{
+	class CAlphabetMap;
+}
 
 /// Class used for fast conversion from training text (i.e. catenated
 /// non-display text of symbols; Mandarin / Super-PinYin is a bit more
@@ -72,108 +55,76 @@ namespace Dasher {
 /// 
 /// IAM 08/2002
 
-#include "../Common/Messages.h"
-
 class Dasher::CAlphabetMap {
-
-public:
-  ~CAlphabetMap();
-
-  // Return the symbol associated with Key or Undefined.
-  symbol Get(const std::string & Key) const;
-  symbol GetSingleChar(char key) const;
-
-  class SymbolStream {
-  public:
-    ///pMsgs used for reporting errors in utf8 encoding
-    SymbolStream(std::istream &_in, CMessageDisplay *pMsgs=NULL);
-    ///Gets the next symbol in the stream, using the specified AlphabetMap
-    /// to convert unicode characters to symbols.
-    /// \return 0 for unknown symbol (not in map); -1 for EOF; else symbol#.
-    symbol next(const CAlphabetMap *map);
-    
-    ///Finds the next complete character in the stream,  but does not advance past it.
-    /// Hence, repeated calls will return the same string. (Always constructs a string,
-    /// which next() avoids for single-octet chars, so may be slower)
-    std::string peekAhead();
-    
-    ///Returns the string representation of the previous symbol (i.e. that returned
-    /// by the previous call to next()). Undefined if next() has not been called, or
-    /// if peekAhead() has been called since the last call to next(). Does not change
-    /// the stream position. (Always constructs a string, which next() avoids for 
-    /// single-octet chars, so may be slower.)
-    std::string peekBack();
-  protected:
-    ///Called periodically to indicate some number of bytes have been read.
-    /// Default implementation does nothing; subclasses may override for e.g. logging.
-    /// \param num number of octets read _since_ the previous call.
-    virtual void bytesRead(off_t num) {};
-  private:
-    ///Finds beginning of next unicode character, at position 'pos' or later,
-    /// filling buffer and skipping invalid characters as necessary.
-    /// Leaves 'pos' pointing at beginning of said character.
-    /// \return the number of octets representing the next character, or 0 for EOF
-    /// (inc. where the file ends with an incomplete character)
-    inline int findNext();
-    void readMore();
-    char buf[1024];
-    off_t pos, len;
-    std::istream &in;
-    CMessageDisplay * const m_pMsgs;
-  };
-  
-  // Fills Symbols with the symbols corresponding to Input. {{{ Note that this
-  // is not necessarily reversible by repeated use of GetText. Some text
-  // may not be recognised; any such will be turned into symbol number 0.}}}  
-  void GetSymbols(std::vector<symbol> &Symbols, const std::string &Input) const;
-
-  CAlphabetMap(unsigned int InitialTableSize = 255);
-  void AddParagraphSymbol(symbol Value);
-  
-  ///Add a symbol to the map
-  /// \param Key text of the symbol; must not be present already
-  /// \param Value symbol number to which that text should be mapped
-  void Add(const std::string & Key, symbol Value);
-  
-private:
-  class Entry {
-  public:
-    Entry(std::string Key, symbol Symbol, Entry * Next)
-  :  Key(Key), Symbol(Symbol), Next(Next) {
-    } std::string Key;
-    symbol Symbol;
-    Entry *Next;
-  };
-
-  // A standard hash -- could try and research something specific.
-  inline unsigned int Hash(const std::string & Input) const {
-    unsigned int Result = 0;
-
-    typedef std::string::const_iterator CI;
-    CI Cur = Input.begin();
-    CI end = Input.end();
-
-    while(Cur != end)
-      Result = (Result << 1) ^ *Cur++;
-    Result %= HashTable.size();
-
-    return Result;
-    /*
-       if (Input.size()==1) // Speedup for ASCII text
-       return Input[0];
-
-       for (int i=0; i<Input.size(); i++)
-       Result = (Result<<1)^Input[i];
-
-       return Result%HashTable.size();
-     */
-  } std::vector < Entry > Entries;
-  std::vector < Entry * >HashTable;
-  symbol *m_pSingleChars;
-  /// both "\r\n" and "\n" are mapped to this (if not Undefined).
-  /// This is the only case where >1 character can map to a symbol.
-  symbol m_ParagraphSymbol;
+	public:
+		~CAlphabetMap();
+		// Return the symbol associated with Key or Undefined.
+		symbol Get(const std::string &Key) const;
+		symbol GetSingleChar(char key) const;
+		class SymbolStream {
+			public:
+				///pMsgs used for reporting errors in utf8 encoding
+				SymbolStream(std::istream &_in);
+				///Gets the next symbol in the stream, using the specified AlphabetMap
+				/// to convert unicode characters to symbols.
+				/// \return 0 for unknown symbol (not in map); -1 for EOF; else symbol#.
+				symbol next(const CAlphabetMap *map);
+			private:
+				///Finds beginning of next unicode character, at position 'pos' or later,
+				/// filling buffer and skipping invalid characters as necessary.
+				/// Leaves 'pos' pointing at beginning of said character.
+				/// \return the number of octets representing the next character, or 0 for EOF
+				/// (inc. where the file ends with an incomplete character)
+				inline int findNext();
+				void readMore();
+				char buf[1024];
+				off_t pos, len;
+				std::istream &in;
+		};
+		// Fills Symbols with the symbols corresponding to Input. {{{ Note that this
+		// is not necessarily reversible by repeated use of GetText. Some text
+		// may not be recognised; any such will be turned into symbol number 0.}}}
+		void GetSymbols(std::vector<symbol> &Symbols,
+				const std::string &Input) const;
+		CAlphabetMap(unsigned int InitialTableSize = 255);
+		void AddParagraphSymbol(symbol Value);
+		///Add a symbol to the map
+		/// \param Key text of the symbol; must not be present already
+		/// \param Value symbol number to which that text should be mapped
+		void Add(const std::string &Key, symbol Value);
+	private:
+		class Entry {
+			public:
+				Entry(std::string Key, symbol Symbol, Entry *Next) :
+						Key(Key), Symbol(Symbol), Next(Next) {
+				}
+				std::string Key;
+				symbol Symbol;
+				Entry *Next;
+		};
+		// A standard hash -- could try and research something specific.
+		inline unsigned int Hash(const std::string &Input) const {
+			unsigned int Result = 0;
+			std::string::const_iterator Cur = Input.begin();
+			std::string::const_iterator end = Input.end();
+			while (Cur!=end)
+				Result = (Result<<1)^*Cur++;
+			Result %= HashTable.size();
+			return Result;
+			/*
+			 if (Input.size()==1) // Speedup for ASCII text
+			 return Input[0];
+			 for (int i=0; i<Input.size(); i++)
+			 Result = (Result<<1)^Input[i];
+			 return Result%HashTable.size();
+			 */
+		}
+		std::vector<Entry> Entries;
+		std::vector<Entry*> HashTable;
+		symbol *m_pSingleChars;
+		/// both "\r\n" and "\n" are mapped to this (if not Undefined).
+		/// This is the only case where >1 character can map to a symbol.
+		symbol m_ParagraphSymbol;
 };
-/// \}
 
 #endif /* #ifndef __AlphabetMap_h__ */

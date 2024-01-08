@@ -1,5 +1,5 @@
-#ifndef __AlphabetMap_h__
-#define __AlphabetMap_h__
+#ifndef ALPHABET_MAP_INCLUDED
+#define ALPHABET_MAP_INCLUDED
 
 #include "../Common/DasherTypes.h"
 #include <vector>
@@ -12,16 +12,12 @@ namespace Dasher {
 			~AlphabetMap();
 			//Adds a symbol to the map
 			//key: text of the symbol; must not be present already
-			//Value: symbol number to which that text should be mapped
+			//value: symbol number to which that text should be mapped
 			void add(const std::string &key, Symbol value);
 			void addParagraphSymbol(Symbol value);
 			//Returns the symbol associated with 'key' or Undefined.
 			Symbol get(const std::string &key) const;
 			Symbol getSingleChar(char key) const;
-			//Fills 'symbols' with the symbols corresponding to Input. Note that this
-			//is not necessarily reversible by repeated use of GetText. Some text
-			//may not be recognized; any such will be turned into symbol number 0.
-			void getSymbols(std::vector<Symbol> &symbols, const std::string &input) const;
 			class SymbolStream {
 				public:
 					SymbolStream(std::istream &in);
@@ -37,7 +33,7 @@ namespace Dasher {
 					//filling buffer and skipping invalid characters as necessary.
 					//Leaves 'pos' pointing at beginning of said character.
 					//Returns the number of octets representing the next character, or 0 for EOF
-					//(inc. where the file ends with an incomplete character)
+					//(including where the file ends with an incomplete character)
 					inline int findNext();
 					void readMore();
 					int getUtf8Count(int pos);
@@ -45,8 +41,8 @@ namespace Dasher {
 		private:
 			class Entry {
 				public:
-					Entry(std::string Key, Symbol symbol, Entry *Next) :
-							key(Key), symbol(symbol), next(Next) {
+					Entry(std::string key, Symbol symbol, Entry *next) :
+							key(key), symbol(symbol), next(next) {
 						//empty
 					}
 					std::string key;

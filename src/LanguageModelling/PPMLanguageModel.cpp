@@ -1,12 +1,12 @@
 #include "PPMLanguageModel.h"
 
-#include "stdlib.h"
-#include <string.h>
+#include "stdlib.h" //for abs
+#include <string.h> //for memset
 
 using namespace Dasher;
 
 inline PPMLanguageModel::PPMNode::PPMNode(Symbol symbol) :
-		symbol(symbol), vine(0), count(1), childrenArray(NULL), numOfChildSlots(0) {
+		symbol(symbol), vine(NULL), count(1), childrenArray(NULL), numOfChildSlots(0) {
 	//empty
 }
 
@@ -16,14 +16,14 @@ inline PPMLanguageModel::PPMNode::~PPMNode() {
 }
 
 inline PPMLanguageModel::ChildIterator PPMLanguageModel::PPMNode::children() const {
-	//if numOfChildSlots = 0 / 1, 'childrenArray' is direct pointer, else ptr to array (of pointers)
-	PPMNode *const*ppChild = (numOfChildSlots==0 || numOfChildSlots==1) ? &child : childrenArray;
+	//if numOfChildSlots = 0 / 1, 'childrenArray' is direct pointer, else pointer to array (of pointers)
+	PPMNode *const *ppChild = (numOfChildSlots==0 || numOfChildSlots==1) ? &child : childrenArray;
 	return ChildIterator(ppChild+abs(numOfChildSlots), ppChild-1);
 }
 
 inline const PPMLanguageModel::ChildIterator PPMLanguageModel::PPMNode::end() const {
-	//if numOfChildSlots = 0 / 1, 'childrenArray' is direct pointer, else ptr to array (of pointers)
-	PPMNode *const*ppChild = (numOfChildSlots==0 || numOfChildSlots==1) ? &child : childrenArray;
+	//if numOfChildSlots = 0 / 1, 'childrenArray' is direct pointer, else pointer to array (of pointers)
+	PPMNode *const *ppChild = (numOfChildSlots==0 || numOfChildSlots==1) ? &child : childrenArray;
 	return ChildIterator(ppChild, ppChild-1);
 }
 
@@ -68,15 +68,15 @@ void PPMLanguageModel::PPMNode::addChild(PPMNode *newChild, int numSymbols) {
 					return;
 				}
 		} else {
-			int start = newChild->symbol;
+			Symbol start = newChild->symbol;
 			//find length of run (including to-be-inserted element)...
 			while (childrenArray[start = (start+numOfChildSlots-1)%numOfChildSlots]);
-			int idx = newChild->symbol;
+			Symbol idx = newChild->symbol;
 			while (childrenArray[idx %= numOfChildSlots]) ++idx;
 			//found NULL
-			int stop = idx;
+			Symbol stop = idx;
 			while (childrenArray[stop = (stop+1)%numOfChildSlots]);
-			//start and idx point to NULLs (with inserted element somewhere inbetween)
+			//start and idx point to NULLs (with inserted element somewhere in between)
 			int runLen = (numOfChildSlots+stop-(start+1))%numOfChildSlots;
 			if (runLen<=MAX_RUN) {
 				//ok, maintain size
@@ -107,22 +107,18 @@ void PPMLanguageModel::PPMNode::addChild(PPMNode *newChild, int numSymbols) {
 	}
 }
 
-PPMLanguageModel::PPMLanguageModel(int numSyms, int maxOrder, bool updateExclusion, int alpha, int beta) :
-		numOfSymbolsPlusOne(numSyms+1), root(new PPMNode(-1)), contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192),
+PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion, int alpha, int beta) :
+		numOfSymbolsPlusOne(numOfSymbols+1), root(new PPMNode(-1)), contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192),
 		maxOrder(maxOrder), updateExclusion(updateExclusion), alpha(alpha), beta(beta) {
 	rootContext = contextAllocator.allocate();
 	rootContext->head = root;
 	rootContext->order = 0;
 }
 
-bool PPMLanguageModel::isValidContext(const Context context) const {
-	return setOfContexts.count((const PPMContext*) context)>0;
-}
-
 //Get the probability distribution at the context
 void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &probs, int norm, int uniform) const {
 	const PPMContext *ppmContext = (const PPMContext*) (context);
-	//DASHER_ASSERT(isValidContext(context));
+	//DASHER_ASSERT(isValidContext(context)); //method removed, simply checked whether setOfContexts contains context
 	probs.resize(numOfSymbolsPlusOne);
 	std::vector<bool> exclusions(numOfSymbolsPlusOne);
 	unsigned int toSpend = norm;
@@ -141,31 +137,30 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &prob
 	bool doExclusion = 0; //FIXME
 	for (PPMNode *temp = ppmContext->head; temp; temp = temp->vine) {
 		int total = 0;
-		for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator++) {
+		for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator.next()) {
 			Symbol sym = (*symbolIterator)->symbol;
 			if (!(exclusions[sym] && doExclusion)) total += (*symbolIterator)->count;
 		}
 		if (total) {
 			unsigned int sizeOfSlice = toSpend;
-			for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator++) {
+			for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator.next()) {
 				if (!(exclusions[(*symbolIterator)->symbol] && doExclusion)) {
 					exclusions[(*symbolIterator)->symbol] = 1;
 					unsigned int p = static_cast<int64>(sizeOfSlice)*(100*(*symbolIterator)->count-beta)/(100*total+alpha);
 					probs[(*symbolIterator)->symbol] += p;
 					toSpend -= p;
 				}
-				// Usprintf(debug,TEXT("symbol %u counts %d p %u toSpend %u \n"), symbol, s->count, p, toSpend);
-				// DebugOutput(debug);
+				//printf("symbol %u counts %d p %u toSpend %u \n", symbol, s->count, p, toSpend);
 			}
 		}
 	}
-	unsigned int size_of_slice = toSpend;
-	int symbolsleft = 0;
+	unsigned int sizeOfSlice = toSpend;
+	int symbolsLeft = 0;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++)
-		if (!(exclusions[i] && doExclusion)) symbolsleft++;
+		if (!(exclusions[i] && doExclusion)) symbolsLeft++;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
 		if (!(exclusions[i] && doExclusion)) {
-			unsigned int p = size_of_slice/symbolsleft;
+			unsigned int p = sizeOfSlice/symbolsLeft;
 			probs[i] += p;
 			toSpend -= p;
 		}
@@ -180,19 +175,17 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &prob
 	//DASHER_ASSERT(toSpend == 0);
 }
 
-//Update context with symbol 'Symbol'
-void PPMLanguageModel::enterSymbol(Context c, int Symbol) {
-	if (Symbol==0) return;
-	//DASHER_ASSERT(Symbol >= 0 && Symbol < GetSize());
+//Update context with symbol 'symbol'
+void PPMLanguageModel::enterSymbol(Context c, Symbol symbol) {
+	if (symbol==0) return;
+	//DASHER_ASSERT(symbol >= 0 && symbol < GetSize());
 	PPMContext &context = *(PPMContext*) (c);
 	while (context.head) {
 		if (context.order<maxOrder) { //Only try to extend the context if it's not going to make it too long
-			if (PPMNode *find = context.head->findSymbol(Symbol)) {
+			if (PPMNode *find = context.head->findSymbol(symbol)) {
 				context.order++;
 				context.head = find;
-				//Usprintf(debug,TEXT("found context %x order %d\n"),head,order);
-				//DebugOutput(debug);
-				//std::cout << context.order << std::endl;
+				//printf("found context %x order %d\n", head, order);
 				return;
 			}
 		}
@@ -200,21 +193,20 @@ void PPMLanguageModel::enterSymbol(Context c, int Symbol) {
 		context.order--;
 		context.head = context.head->vine;
 	}
-	if (context.head==0) {
+	if (context.head==NULL) {
 		context.head = root;
 		context.order = 0;
 	}
-	//std::cout << context.order << std::endl;
 }
 
 //Add symbol to the context
 //Creates new nodes, updates counts, and leaves 'context' at the new context.
-void PPMLanguageModel::learnSymbol(Context c, int Symbol) {
-	if (Symbol==0) return;
-	//DASHER_ASSERT(Symbol >= 0 && Symbol < GetSize());
+void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
+	if (symbol==0) return;
+	//DASHER_ASSERT(symbol >= 0 && symbol < GetSize());
 	PPMContext &context = *(PPMContext*) (c);
-	PPMNode *n = addSymbolToNode(context.head, Symbol);
-	//DASHER_ASSERT(n == context.head->findSymbol(Symbol));
+	PPMNode *n = addSymbolToNode(context.head, symbol);
+	//DASHER_ASSERT(n == context.head->findSymbol(symbol));
 	context.head = n;
 	context.order++;
 	while (context.order>maxOrder) {
@@ -223,30 +215,29 @@ void PPMLanguageModel::learnSymbol(Context c, int Symbol) {
 	}
 }
 
-PPMLanguageModel::PPMNode* PPMLanguageModel::addSymbolToNode(PPMNode *pNode, Symbol sym) {
-	PPMNode *pReturn = pNode->findSymbol(sym);
-	// std::cout << symbol << ",";
-	if (pReturn!=NULL) {
-		pReturn->count++;
+PPMLanguageModel::PPMNode* PPMLanguageModel::addSymbolToNode(PPMNode *node, Symbol symbol) {
+	PPMNode *returnVal = node->findSymbol(symbol);
+	if (returnVal!=NULL) {
+		returnVal->count++;
 		if (!updateExclusion) {
 			//Update vine contexts too. Guaranteed to exist if child does!
-			for (PPMNode *v = pReturn->vine; v; v = v->vine) {
+			for (PPMNode *v = returnVal->vine; v; v = v->vine) {
 				//DASHER_ASSERT(v == root || v->symbol == symbol);
 				v->count++;
 			}
 		}
 	} else {
 		//symbol does not exist at this level
-		pReturn = makeNode(sym); //count initialized to 1 but no vine pointer
-		pNode->addChild(pReturn, numOfSymbolsPlusOne);
-		pReturn->vine = (pNode==root) ? root : addSymbolToNode(pNode->vine, sym);
+		returnVal = makeNode(symbol); //count initialized to 1 but no vine pointer
+		node->addChild(returnVal, numOfSymbolsPlusOne);
+		returnVal->vine = (node==root) ? root : addSymbolToNode(node->vine, symbol);
 	}
-	return pReturn;
+	return returnVal;
 }
 
-PPMLanguageModel::PPMNode* PPMLanguageModel::makeNode(int sym) {
+PPMLanguageModel::PPMNode* PPMLanguageModel::makeNode(Symbol symbol) {
 	PPMNode *res = nodeAllocator.allocate();
-	res->symbol = sym;
+	res->symbol = symbol;
 	++numOfNodesAllocated;
 	return res;
 }

@@ -1,11 +1,11 @@
-#ifndef __PooledAlloc_h__
-#define __PooledAlloc_h__
+#ifndef POOLED_ALLOCATOR_INCLUDED
+#define POOLED_ALLOCATOR_INCLUDED
 
 #include "SimplePooledAllocator.h"
 
-// PooledAllocator allocates objects T in fixed-size blocks (specified in the constructor) 
-// allocate returns an uninitialized T*
-// free returns an object to the pool
+//PooledAllocator allocates objects T in fixed-size blocks (specified in the constructor);
+//allocate returns an uninitialized T*;
+//free returns an object to the pool
 template<typename T>
 class PooledAllocator {
 	public:
@@ -16,7 +16,7 @@ class PooledAllocator {
 		//Return an object to the pool
 		void free(T *elementToFree);
 	private:
-		//Use simple pooled alloc for the blocked allocation
+		//Use simple pooled allocator for the blocked allocation
 		SimplePooledAllocator<T> simpleAllocator;
 		//The free list
 		std::vector<T*> freeList;

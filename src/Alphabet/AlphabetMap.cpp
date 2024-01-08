@@ -18,7 +18,8 @@ Symbol AlphabetMap::SymbolStream::next(const AlphabetMap *map) {
 	if (numChars==0) return -1; //EOF
 	if (numChars==1) {
 		if (map->paragraphSymbol!=UNKNOWN_SYMBOL && buf[pos]=='\r') {
-			//DASHER_ASSERT(pos+1<len || len<1024); //there are more characters (we should have read utf8...max_length), or else input is exhausted
+			//DASHER_ASSERT(pos+1<len || len<1024); //there are more characters
+			//(we should have read utf8...max_length), or else input is exhausted
 			if (pos+1<len && buf[pos+1]=='\n') {
 				pos += 2;
 				return map->paragraphSymbol;
@@ -26,7 +27,7 @@ Symbol AlphabetMap::SymbolStream::next(const AlphabetMap *map) {
 		}
 		return map->getSingleChar(buf[pos++]);
 	}
-	int sym = map->get(std::string(&buf[pos], numChars));
+	Symbol sym = map->get(std::string(&buf[pos], numChars));
 	pos += numChars;
 	return sym;
 }
@@ -82,9 +83,9 @@ int AlphabetMap::SymbolStream::getUtf8Count(int pos) {
 	return 0;
 }
 
-AlphabetMap::AlphabetMap(unsigned int InitialTableSize) :
-		hashTable(InitialTableSize<<1), paragraphSymbol(UNKNOWN_SYMBOL) {
-	entries.reserve(InitialTableSize);
+AlphabetMap::AlphabetMap(unsigned int initialTableSize) :
+		hashTable(initialTableSize<<1), paragraphSymbol(UNKNOWN_SYMBOL) {
+	entries.reserve(initialTableSize);
 	// TODO: fix the code so it works if char is signed.
 	const int numChars = std::numeric_limits<char>::max()+1;
 	singleChars = new Symbol[numChars];
@@ -152,11 +153,4 @@ Symbol AlphabetMap::get(const std::string &key) const {
 
 Symbol AlphabetMap::getSingleChar(char key) const {
 	return singleChars[key];
-}
-
-void AlphabetMap::getSymbols(std::vector<Symbol> &symbols, const std::string &input) const {
-	std::istringstream in(input);
-	SymbolStream syms(in);
-	for (Symbol sym; (sym = syms.next(this))!=-1;)
-		symbols.push_back(sym);
 }

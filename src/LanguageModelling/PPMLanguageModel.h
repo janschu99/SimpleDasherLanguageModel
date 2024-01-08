@@ -1,26 +1,24 @@
-#ifndef __PPMLanguageModel_h__
-#define __PPMLanguageModel_h__
+#ifndef PPM_LANGUAGE_MODEL_INCLUDED
+#define PPM_LANGUAGE_MODEL_INCLUDED
 
 #include "../Common/DasherTypes.h"
-#include "../Common/PooledAlloc.h"
 #include <set>
+#include "../Common/PooledAllocator.h"
 
 namespace Dasher {
 	
 	//"Standard" PPM language model: getProbs uses counts in PPM child nodes.
-	//Implements the PPM tree, inc. fast hashing of child nodes by symbol number; and entering and
+	//Implements the PPM tree, including fast hashing of child nodes by symbol number; and entering and
 	//learning symbols in a context, i.e. navigating and updating the tree, with optional update exclusion.
 	class PPMLanguageModel {
 		public:
-			//Index of registered context
-			typedef size_t Context;
-			PPMLanguageModel(int numSyms, int maxOrder, bool updateExclusion, int alpha, int beta);
+			typedef size_t Context; //Index of registered context
+			PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion, int alpha, int beta);
 			Context createEmptyContext();
 			void releaseContext(Context context);
 			Context cloneContext(Context context);
-			void enterSymbol(Context context, int symbol);
-			void learnSymbol(Context context, int symbol);
-			bool isValidContext(const Context context) const;
+			void enterSymbol(Context context, Symbol symbol);
+			void learnSymbol(Context context, Symbol symbol);
 			void getProbs(Context context, std::vector<unsigned int> &probs, int norm, int uniform) const;
 		private:
 			class ChildIterator;
@@ -36,7 +34,7 @@ namespace Dasher {
 					ChildIterator children() const;
 					const ChildIterator end() const;
 					void addChild(PPMNode *newChild, int numSymbols);
-					PPMNode* findSymbol(Symbol sym) const;
+					PPMNode* findSymbol(Symbol symbol) const;
 				private:
 					union {
 						PPMNode **childrenArray;
@@ -51,15 +49,17 @@ namespace Dasher {
 			};
 			class ChildIterator {
 				private:
+					PPMNode *const *child;
+					PPMNode *const *stop;
+				public:
+					ChildIterator(PPMNode *const *ppChild, PPMNode *const *ppStop) :
+							child(ppChild), stop(ppStop) {
+						next();
+					}
 					void next() {
 						if (child==stop) return;
 						while ((--child)!=stop)
 							if (*child) break;
-					}
-					PPMNode *const*child, *const*stop;
-				public:
-					bool operator==(const ChildIterator &other) const {
-						return child==other.child && stop==other.stop;
 					}
 					bool operator!=(const ChildIterator &other) const {
 						return child!=other.child || stop!=other.stop;
@@ -67,20 +67,11 @@ namespace Dasher {
 					PPMNode* operator*() const {
 						return (child==stop) ? NULL : *child;
 					}
-					ChildIterator operator++(int) {
-						ChildIterator temp(*this);
-						next();
-						return temp;
-					}
-					ChildIterator(PPMNode *const*ppChild, PPMNode *const*ppStop) :
-							child(ppChild), stop(ppStop) {
-						next();
-					}
 			};
 			class PPMContext {
 				public:
 					PPMContext() :
-							head(0), order(0) {
+							head(NULL), order(0) {
 						//empty
 					};
 					PPMNode *head;
@@ -90,8 +81,8 @@ namespace Dasher {
 			PPMLanguageModel(const PPMLanguageModel&);
 			PPMLanguageModel& operator=(const PPMLanguageModel&);
 			//Makes a standard PPMNode, but using a pooled allocator (nodeAllocator) - faster!
-			PPMNode* makeNode(int sym);
-			PPMNode* addSymbolToNode(PPMNode *pNode, Symbol sym);
+			PPMNode* makeNode(Symbol symbol);
+			PPMNode* addSymbolToNode(PPMNode *pNode, Symbol symbol);
 			//The number of symbols over which we are making predictions, plus one
 			//(to leave space for an initial 0).
 			const int numOfSymbolsPlusOne;
@@ -100,7 +91,7 @@ namespace Dasher {
 			PooledAllocator<PPMContext> contextAllocator;
 			std::set<const PPMContext*> setOfContexts;
 			int numOfNodesAllocated;
-			mutable SimplePooledAllocator<PPMNode> nodeAllocator;
+			SimplePooledAllocator<PPMNode> nodeAllocator;
 			//Cache parameters that don't make sense to adjust during the life of a language model...
 			const int maxOrder;
 			const bool updateExclusion;

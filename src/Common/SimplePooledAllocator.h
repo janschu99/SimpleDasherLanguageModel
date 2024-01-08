@@ -1,10 +1,10 @@
-#ifndef __SimplePooledAlloc_h__
-#define __SimplePooledAlloc_h__
+#ifndef SIMPLE_POOLED_ALLOCATOR_INCLUDED
+#define SIMPLE_POOLED_ALLOCATOR_INCLUDED
 
 #include <vector>
 
-//SimplePooledAllocator allocates objects T in fixed-size blocks (specified) 
-//allocate returns a default-constructed T*
+//SimplePooledAllocator allocates objects T in fixed-size blocks (specified);
+//allocate returns a default-constructed T*;
 //Memory is only freed on destruction of the allocator
 template<typename T>
 class SimplePooledAllocator {

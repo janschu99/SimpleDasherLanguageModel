@@ -116,40 +116,26 @@ PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateEx
 }
 
 //Get the probability distribution at the context
-void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &probs, int norm, int uniform) const {
+void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &probs, int norm) const {
 	const PPMContext *ppmContext = (const PPMContext*) (context);
 	//DASHER_ASSERT(isValidContext(context)); //method removed, simply checked whether setOfContexts contains context
 	probs.resize(numOfSymbolsPlusOne);
-	std::vector<bool> exclusions(numOfSymbolsPlusOne);
-	unsigned int toSpend = norm;
-	unsigned int uniformLeft = uniform;
 	//TODO: Sort out zero symbol case
-	probs[0] = 0;
-	exclusions[0] = false;
-	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
-		probs[i] = uniformLeft/(numOfSymbolsPlusOne-i);
-		uniformLeft -= probs[i];
-		toSpend -= probs[i];
-		exclusions[i] = false;
+	for (int i = 0; i<numOfSymbolsPlusOne; i++) {
+		probs[i] = 0;
 	}
-	//DASHER_ASSERT(uniformLeft == 0);
-	//bool doExclusion = GetLongParameter(LP_LM_ALPHA);
-	bool doExclusion = 0; //FIXME
+	unsigned int toSpend = norm;
 	for (PPMNode *temp = ppmContext->head; temp; temp = temp->vine) {
 		int total = 0;
 		for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator.next()) {
-			Symbol sym = (*symbolIterator)->symbol;
-			if (!(exclusions[sym] && doExclusion)) total += (*symbolIterator)->count;
+			total += (*symbolIterator)->count;
 		}
 		if (total) {
 			unsigned int sizeOfSlice = toSpend;
 			for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator.next()) {
-				if (!(exclusions[(*symbolIterator)->symbol] && doExclusion)) {
-					exclusions[(*symbolIterator)->symbol] = 1;
-					unsigned int p = static_cast<int64>(sizeOfSlice)*(100*(*symbolIterator)->count-beta)/(100*total+alpha);
-					probs[(*symbolIterator)->symbol] += p;
-					toSpend -= p;
-				}
+				unsigned int p = static_cast<int64>(sizeOfSlice)*(100*(*symbolIterator)->count-beta)/(100*total+alpha);
+				probs[(*symbolIterator)->symbol] += p;
+				toSpend -= p;
 				//printf("symbol %u counts %d p %u toSpend %u \n", symbol, s->count, p, toSpend);
 			}
 		}
@@ -157,13 +143,11 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &prob
 	unsigned int sizeOfSlice = toSpend;
 	int symbolsLeft = 0;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++)
-		if (!(exclusions[i] && doExclusion)) symbolsLeft++;
+		symbolsLeft++;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
-		if (!(exclusions[i] && doExclusion)) {
-			unsigned int p = sizeOfSlice/symbolsLeft;
-			probs[i] += p;
-			toSpend -= p;
-		}
+		unsigned int p = sizeOfSlice/symbolsLeft;
+		probs[i] += p;
+		toSpend -= p;
 	}
 	int iLeft = numOfSymbolsPlusOne-1;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++) {

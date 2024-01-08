@@ -19,7 +19,7 @@ namespace Dasher {
 			Context cloneContext(Context context);
 			void enterSymbol(Context context, Symbol symbol);
 			void learnSymbol(Context context, Symbol symbol);
-			void getProbs(Context context, std::vector<unsigned int> &probs, int norm, int uniform) const;
+			void getProbs(Context context, std::vector<unsigned int> &probs, int norm) const;
 		private:
 			class ChildIterator;
 			class PPMNode {

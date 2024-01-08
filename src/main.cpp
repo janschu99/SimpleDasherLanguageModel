@@ -137,14 +137,14 @@ int main() {
 	std::cout << "Entering 'b':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
-	lm.getProbs(context, probs, norm, 0);
+	lm.getProbs(context, probs, norm);
 	printVector(probs);
 	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'a':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, norm, 0);
+	lm.getProbs(context, probs, norm);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -152,7 +152,7 @@ int main() {
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, norm, 0);
+	lm.getProbs(context, probs, norm);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -161,7 +161,7 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, norm, 0);
+	lm.getProbs(context, probs, norm);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -171,7 +171,7 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, norm, 0);
+	lm.getProbs(context, probs, norm);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -194,7 +194,7 @@ int main() {
 	lmLarge.enterSymbol(context, 4);
 	lmLarge.enterSymbol(context, 3);
 	lmLarge.enterSymbol(context, 1);
-	lmLarge.getProbs(context, probs, normLarge, 0);
+	lmLarge.getProbs(context, probs, normLarge);
 	printVector(probs);
 	lmLarge.releaseContext(context);
 

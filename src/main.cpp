@@ -32,171 +32,171 @@ static unsigned long getNorm(unsigned int numOfSymbols) {
 
 //Reading alphabet definitions from xml files has been left out because it is irrelevant for the core data structure
 //and algorithm. For testing purposes, simply hardcode a small alphabet.
-CAlphabetMap* getDefaultAlphabetMap() {
-	CAlphabetMap* map = new CAlphabetMap();
-	map->Add("a", 1);
-	map->Add("b", 2);
-	map->Add("c", 3);
-	map->Add("d", 4);
+AlphabetMap* getDefaultAlphabetMap() {
+	AlphabetMap* map = new AlphabetMap();
+	map->add("a", 1);
+	map->add("b", 2);
+	map->add("c", 3);
+	map->add("d", 4);
 	return map;
 }
 
-CAlphabetMap* getLargeAlphabetMap() {
-	CAlphabetMap* map = new CAlphabetMap();
-	map->Add("a", 1);
-	map->Add("b", 2);
-	map->Add("c", 3);
-	map->Add("d", 4);
-	map->Add("e", 5);
-	map->Add("f", 6);
-	map->Add("g", 7);
-	map->Add("h", 8);
-	map->Add("i", 9);
-	map->Add("j", 10);
-	map->Add("k", 11);
-	map->Add("l", 12);
-	map->Add("m", 13);
-	map->Add("n", 14);
-	map->Add("o", 15);
-	map->Add("p", 16);
-	map->Add("q", 17);
-	map->Add("r", 18);
-	map->Add("s", 19);
-	map->Add("t", 20);
-	map->Add("u", 21);
-	map->Add("v", 22);
-	map->Add("w", 23);
-	map->Add("x", 24);
-	map->Add("y", 25);
-	map->Add("z", 26);
-	map->Add("A", 27);
-	map->Add("B", 28);
-	map->Add("C", 29);
-	map->Add("D", 30);
-	map->Add("E", 31);
-	map->Add("F", 32);
-	map->Add("G", 33);
-	map->Add("H", 34);
-	map->Add("I", 35);
-	map->Add("J", 36);
-	map->Add("K", 37);
-	map->Add("L", 38);
-	map->Add("M", 39);
-	map->Add("N", 40);
-	map->Add("O", 41);
-	map->Add("P", 42);
-	map->Add("Q", 43);
-	map->Add("R", 44);
-	map->Add("S", 45);
-	map->Add("T", 46);
-	map->Add("U", 47);
-	map->Add("V", 48);
-	map->Add("W", 49);
-	map->Add("X", 50);
-	map->Add("Y", 51);
-	map->Add("Z", 52);
-	map->Add("0", 53);
-	map->Add("1", 54);
-	map->Add("2", 55);
-	map->Add("3", 56);
-	map->Add("4", 57);
-	map->Add("5", 58);
-	map->Add("6", 59);
-	map->Add("7", 60);
-	map->Add("8", 61);
-	map->Add("9", 62);
+AlphabetMap* getLargeAlphabetMap() {
+	AlphabetMap* map = new AlphabetMap();
+	map->add("a", 1);
+	map->add("b", 2);
+	map->add("c", 3);
+	map->add("d", 4);
+	map->add("e", 5);
+	map->add("f", 6);
+	map->add("g", 7);
+	map->add("h", 8);
+	map->add("i", 9);
+	map->add("j", 10);
+	map->add("k", 11);
+	map->add("l", 12);
+	map->add("m", 13);
+	map->add("n", 14);
+	map->add("o", 15);
+	map->add("p", 16);
+	map->add("q", 17);
+	map->add("r", 18);
+	map->add("s", 19);
+	map->add("t", 20);
+	map->add("u", 21);
+	map->add("v", 22);
+	map->add("w", 23);
+	map->add("x", 24);
+	map->add("y", 25);
+	map->add("z", 26);
+	map->add("A", 27);
+	map->add("B", 28);
+	map->add("C", 29);
+	map->add("D", 30);
+	map->add("E", 31);
+	map->add("F", 32);
+	map->add("G", 33);
+	map->add("H", 34);
+	map->add("I", 35);
+	map->add("J", 36);
+	map->add("K", 37);
+	map->add("L", 38);
+	map->add("M", 39);
+	map->add("N", 40);
+	map->add("O", 41);
+	map->add("P", 42);
+	map->add("Q", 43);
+	map->add("R", 44);
+	map->add("S", 45);
+	map->add("T", 46);
+	map->add("U", 47);
+	map->add("V", 48);
+	map->add("W", 49);
+	map->add("X", 50);
+	map->add("Y", 51);
+	map->add("Z", 52);
+	map->add("0", 53);
+	map->add("1", 54);
+	map->add("2", 55);
+	map->add("3", 56);
+	map->add("4", 57);
+	map->add("5", 58);
+	map->add("6", 59);
+	map->add("7", 60);
+	map->add("8", 61);
+	map->add("9", 62);
 	return map;
 }
 
-//construct a CAlphabetMap::SymbolStream by passing a std::istream to its constructor (see CTrainer::Parse)
+//construct a AlphabetMap::SymbolStream by passing a std::istream to its constructor (see CTrainer::Parse)
 //adapted from CTrainer::Train
-void train(CPPMLanguageModel* model, CAlphabetMap* alphabetMap, CAlphabetMap::SymbolStream &syms) {
-	CPPMLanguageModel::Context sContext = model->CreateEmptyContext();
-	for(symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
-		model->LearnSymbol(sContext, sym);
+void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, AlphabetMap::SymbolStream &syms) {
+	PPMLanguageModel::Context sContext = model->createEmptyContext();
+	for(Symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
+		model->learnSymbol(sContext, sym);
 	}
-	model->ReleaseContext(sContext);
+	model->releaseContext(sContext);
 }
 
 int main() {
 	unsigned int numOfSymbols = 4;
 	unsigned long norm = getNorm(numOfSymbols);
 	
-	CPPMLanguageModel lm(numOfSymbols);
-	CAlphabetMap* alphabetMap = getDefaultAlphabetMap();
+	PPMLanguageModel lm(numOfSymbols, 5, true, 49, 77);
+	AlphabetMap* alphabetMap = getDefaultAlphabetMap();
 	std::ifstream trainingTextStream;
 	trainingTextStream.open("training.txt");
-	CAlphabetMap::SymbolStream symStream(trainingTextStream);
+	AlphabetMap::SymbolStream symStream(trainingTextStream);
 	train(&lm, alphabetMap, symStream);
 	trainingTextStream.close();
 	delete alphabetMap;
 	
-	CPPMLanguageModel::Context context;
+	PPMLanguageModel::Context context;
 	std::vector<unsigned int> probs;
 	
 	std::cout << "Entering 'b':\n";
-	context = lm.CreateEmptyContext();
-	lm.EnterSymbol(context, 2);
-	lm.GetProbs(context, probs, norm, 0);
+	context = lm.createEmptyContext();
+	lm.enterSymbol(context, 2);
+	lm.getProbs(context, probs, norm, 0);
 	printVector(probs);
-	lm.ReleaseContext(context);
+	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'a':\n";
-	context = lm.CreateEmptyContext();
-	lm.EnterSymbol(context, 1);
-	lm.GetProbs(context, probs, norm, 0);
+	context = lm.createEmptyContext();
+	lm.enterSymbol(context, 1);
+	lm.getProbs(context, probs, norm, 0);
 	printVector(probs);
-	lm.ReleaseContext(context);
+	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'bc':\n";
-	context = lm.CreateEmptyContext();
-	lm.EnterSymbol(context, 2);
-	lm.EnterSymbol(context, 3);
-	lm.GetProbs(context, probs, norm, 0);
+	context = lm.createEmptyContext();
+	lm.enterSymbol(context, 2);
+	lm.enterSymbol(context, 3);
+	lm.getProbs(context, probs, norm, 0);
 	printVector(probs);
-	lm.ReleaseContext(context);
+	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'ddc':\n";
-	context = lm.CreateEmptyContext();
-	lm.EnterSymbol(context, 4);
-	lm.EnterSymbol(context, 4);
-	lm.EnterSymbol(context, 3);
-	lm.GetProbs(context, probs, norm, 0);
+	context = lm.createEmptyContext();
+	lm.enterSymbol(context, 4);
+	lm.enterSymbol(context, 4);
+	lm.enterSymbol(context, 3);
+	lm.getProbs(context, probs, norm, 0);
 	printVector(probs);
-	lm.ReleaseContext(context);
+	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'bdca':\n";
-	context = lm.CreateEmptyContext();
-	lm.EnterSymbol(context, 2);
-	lm.EnterSymbol(context, 4);
-	lm.EnterSymbol(context, 3);
-	lm.EnterSymbol(context, 1);
-	lm.GetProbs(context, probs, norm, 0);
+	context = lm.createEmptyContext();
+	lm.enterSymbol(context, 2);
+	lm.enterSymbol(context, 4);
+	lm.enterSymbol(context, 3);
+	lm.enterSymbol(context, 1);
+	lm.getProbs(context, probs, norm, 0);
 	printVector(probs);
-	lm.ReleaseContext(context);
+	lm.releaseContext(context);
 	
 	std::cout << "\nLoading large training file...\n";
 	unsigned int numOfSymbolsLarge = 62;
 	unsigned long normLarge = getNorm(numOfSymbolsLarge);
 
-	CPPMLanguageModel lmLarge(numOfSymbolsLarge);
-	CAlphabetMap* alphabetMapLarge = getLargeAlphabetMap();
+	PPMLanguageModel lmLarge(numOfSymbolsLarge, 5, true, 49, 77);
+	AlphabetMap* alphabetMapLarge = getLargeAlphabetMap();
 	std::ifstream trainingTextStreamLarge;
 	trainingTextStreamLarge.open("trainingLarge3.txt");
-	CAlphabetMap::SymbolStream symStreamLarge(trainingTextStreamLarge);
+	AlphabetMap::SymbolStream symStreamLarge(trainingTextStreamLarge);
 	train(&lmLarge, alphabetMapLarge, symStreamLarge);
 	trainingTextStreamLarge.close();
 	delete alphabetMapLarge;
 
 	std::cout << "\nEntering 'bdca' in large:\n";
-	context = lmLarge.CreateEmptyContext();
-	lmLarge.EnterSymbol(context, 2);
-	lmLarge.EnterSymbol(context, 4);
-	lmLarge.EnterSymbol(context, 3);
-	lmLarge.EnterSymbol(context, 1);
-	lmLarge.GetProbs(context, probs, normLarge, 0);
+	context = lmLarge.createEmptyContext();
+	lmLarge.enterSymbol(context, 2);
+	lmLarge.enterSymbol(context, 4);
+	lmLarge.enterSymbol(context, 3);
+	lmLarge.enterSymbol(context, 1);
+	lmLarge.getProbs(context, probs, normLarge, 0);
 	printVector(probs);
-	lmLarge.ReleaseContext(context);
+	lmLarge.releaseContext(context);
 
 	return 0;
 }

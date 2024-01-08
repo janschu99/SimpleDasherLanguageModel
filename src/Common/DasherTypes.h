@@ -10,10 +10,10 @@ typedef long long int int64;
 
 namespace Dasher {
 	
-	// Using a signed symbol type allows "Out of band" ie negative
-	// values to be used to flag non-symbol data. For example commands
-	// in dasher nodes.
-	typedef int symbol;
+	//Using a signed symbol type allows "Out of band" ie negative
+	//values to be used to flag non-symbol data. For example commands
+	//in dasher nodes.
+	typedef int Symbol;
 }
 
-#endif /* #ifndef __DasherTypes_h__ */
+#endif

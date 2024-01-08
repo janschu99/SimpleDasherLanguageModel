@@ -1,255 +1,252 @@
 #include "PPMLanguageModel.h"
 
-#include <math.h>
+#include "stdlib.h"
 #include <string.h>
-#include <stack>
-#include <sstream>
-#include <iostream>
 
 using namespace Dasher;
-using namespace std;
 
-CAbstractPPM::CAbstractPPM(int iNumSyms, CPPMnode *pRoot, int iMaxOrder) :
-		m_iNumSyms(iNumSyms), m_pRoot(pRoot), m_iMaxOrder(
-				iMaxOrder<0 ?
-						5/*GetLongParameter(LP_LM_MAX_ORDER)*/: iMaxOrder), bUpdateExclusion(
-				1/*GetLongParameter(LP_LM_UPDATE_EXCLUSION)*/!=0), m_ContextAlloc(
-				1024) {
-	m_pRootContext = m_ContextAlloc.Alloc();
-	m_pRootContext->head = m_pRoot;
-	m_pRootContext->order = 0;
+inline PPMLanguageModel::PPMNode::PPMNode(Symbol symbol) :
+		symbol(symbol), vine(0), count(1), childrenArray(NULL), numOfChildSlots(0) {
+	//empty
 }
 
-bool CAbstractPPM::isValidContext(const Context context) const {
-	return m_setContexts.count((const CPPMContext*) context)>0;
+inline PPMLanguageModel::PPMNode::~PPMNode() {
+	//single child = is direct pointer to node, not array...
+	if (numOfChildSlots!=1) delete[] childrenArray;
 }
 
-// Get the probability distribution at the context
-void CPPMLanguageModel::GetProbs(Context context,
-		std::vector<unsigned int> &probs, int norm, int iUniform) const {
-	const CPPMContext *ppmcontext = (const CPPMContext*) (context);
-	//DASHER_ASSERT(isValidContext(context));
-	int iNumSymbols = GetSize();
-	probs.resize(iNumSymbols);
-	std::vector<bool> exclusions(iNumSymbols);
-	unsigned int iToSpend = norm;
-	unsigned int iUniformLeft = iUniform;
-	// TODO: Sort out zero symbol case
-	probs[0] = 0;
-	exclusions[0] = false;
-	for (int i = 1; i<iNumSymbols; i++) {
-		probs[i] = iUniformLeft/(iNumSymbols-i);
-		iUniformLeft -= probs[i];
-		iToSpend -= probs[i];
-		exclusions[i] = false;
-	}
-	//DASHER_ASSERT(iUniformLeft == 0);
-	//  bool doExclusion = GetLongParameter( LP_LM_ALPHA );
-	bool doExclusion = 0; //FIXME
-	int alpha = 49; //GetLongParameter( LP_LM_ALPHA );
-	int beta = 77; //GetLongParameter( LP_LM_BETA );
-	for (CPPMnode *pTemp = ppmcontext->head; pTemp; pTemp = pTemp->vine) {
-		int iTotal = 0;
-		for (ChildIterator pSymbol = pTemp->children(); pSymbol!=pTemp->end();
-				pSymbol++) {
-			symbol sym = (*pSymbol)->sym;
-			if (!(exclusions[sym]&&doExclusion)) iTotal += (*pSymbol)->count;
-		}
-		if (iTotal) {
-			unsigned int size_of_slice = iToSpend;
-			for (ChildIterator pSymbol = pTemp->children();
-					pSymbol!=pTemp->end(); pSymbol++) {
-				if (!(exclusions[(*pSymbol)->sym]&&doExclusion)) {
-					exclusions[(*pSymbol)->sym] = 1;
-					
-					unsigned int p = static_cast<int64>(size_of_slice)
-							*(100*(*pSymbol)->count-beta)/(100*iTotal+alpha);
-					
-					probs[(*pSymbol)->sym] += p;
-					iToSpend -= p;
-				}
-				// Usprintf(debug,TEXT("sym %u counts %d p %u tospend %u \n"),sym,s->count,p,tospend);
-				// DebugOutput(debug);
-			}
-		}
-	}
-	unsigned int size_of_slice = iToSpend;
-	int symbolsleft = 0;
-	for (int i = 1; i<iNumSymbols; i++)
-		if (!(exclusions[i]&&doExclusion)) symbolsleft++;
-	for (int i = 1; i<iNumSymbols; i++) {
-		if (!(exclusions[i]&&doExclusion)) {
-			unsigned int p = size_of_slice/symbolsleft;
-			probs[i] += p;
-			iToSpend -= p;
-		}
-	}
-	int iLeft = iNumSymbols-1;
-	for (int i = 1; i<iNumSymbols; i++) {
-		unsigned int p = iToSpend/iLeft;
-		probs[i] += p;
-		--iLeft;
-		iToSpend -= p;
-	}
-	//DASHER_ASSERT(iToSpend == 0);
+inline PPMLanguageModel::ChildIterator PPMLanguageModel::PPMNode::children() const {
+	//if numOfChildSlots = 0 / 1, 'childrenArray' is direct pointer, else ptr to array (of pointers)
+	PPMNode *const*ppChild = (numOfChildSlots==0 || numOfChildSlots==1) ? &child : childrenArray;
+	return ChildIterator(ppChild+abs(numOfChildSlots), ppChild-1);
 }
 
-// Update context with symbol 'Symbol'
-void CAbstractPPM::EnterSymbol(Context c, int Symbol) {
-	if (Symbol==0) return;
-	//DASHER_ASSERT(Symbol >= 0 && Symbol < GetSize());
-	CPPMContext &context = *(CPPMContext*) (c);
-	while (context.head) {
-		if (context.order<m_iMaxOrder) { // Only try to extend the context if it's not going to make it too long
-			if (CPPMnode *find = context.head->find_symbol(Symbol)) {
-				context.order++;
-				context.head = find;
-				//      Usprintf(debug,TEXT("found context %x order %d\n"),head,order);
-				//      DebugOutput(debug);
-				//      std::cout << context.order << std::endl;
-				return;
-			}
-		}
-		// If we can't extend the current context, follow vine pointer to shorten it and try again
-		context.order--;
-		context.head = context.head->vine;
-	}
-	if (context.head==0) {
-		context.head = m_pRoot;
-		context.order = 0;
-	}
-	// std::cout << context.order << std::endl;
-
-}
-
-// add symbol to the context
-// creates new nodes, updates counts
-// and leaves 'context' at the new context
-void CAbstractPPM::LearnSymbol(Context c, int Symbol) {
-	if (Symbol==0) return;
-	//DASHER_ASSERT(Symbol >= 0 && Symbol < GetSize());
-	CPPMContext &context = *(CPPMContext*) (c);
-	CPPMnode *n = AddSymbolToNode(context.head, Symbol);
-	//DASHER_ASSERT ( n == context.head->find_symbol(Symbol));
-	context.head = n;
-	context.order++;
-	while (context.order>m_iMaxOrder) {
-		context.head = context.head->vine;
-		context.order--;
-	}
+inline const PPMLanguageModel::ChildIterator PPMLanguageModel::PPMNode::end() const {
+	//if numOfChildSlots = 0 / 1, 'childrenArray' is direct pointer, else ptr to array (of pointers)
+	PPMNode *const*ppChild = (numOfChildSlots==0 || numOfChildSlots==1) ? &child : childrenArray;
+	return ChildIterator(ppChild, ppChild-1);
 }
 
 #define MAX_RUN 4
 
-CAbstractPPM::CPPMnode* CAbstractPPM::CPPMnode::find_symbol(symbol sym) const {
-	// see if symbol is a child of node
-	if (m_iNumChildSlots<0) //negative to mean "full alphabet", use direct indexing
-	return m_ppChildren[sym];
-	if (m_iNumChildSlots==1) {
-		if (m_pChild->sym==sym) return m_pChild;
+PPMLanguageModel::PPMNode* PPMLanguageModel::PPMNode::findSymbol(Symbol symbolToFind) const {
+	//see if symbol is a child of node
+	if (numOfChildSlots<0) //negative to mean "full alphabet", use direct indexing
+		return childrenArray[symbolToFind];
+	if (numOfChildSlots==1) {
+		if (child->symbol==symbolToFind) return child;
 		return 0;
 	}
-	if (m_iNumChildSlots<=MAX_RUN) {
-		for (int i = 0; i<m_iNumChildSlots&&m_ppChildren[i]; i++)
-			if (m_ppChildren[i]->sym==sym) return m_ppChildren[i];
+	if (numOfChildSlots<=MAX_RUN) {
+		for (int i = 0; i<numOfChildSlots && childrenArray[i]; i++)
+			if (childrenArray[i]->symbol==symbolToFind) return childrenArray[i];
 		return 0;
 	}
-	//  printf("finding symbol %d at node %d\n",sym,node->id);
-	for (int i = sym;; i++) { //search through elements which have overflowed into subsequent slots
-		CPPMnode *found = this->m_ppChildren[i%m_iNumChildSlots]; //wrap round
+	//printf("finding symbol %d at node %d\n", symbol, node->id);
+	for (int i = symbolToFind;; i++) { //search through elements which have overflowed into subsequent slots
+		PPMNode *found = this->childrenArray[i%numOfChildSlots]; //wrap round
 		if (!found) return 0; //null element
-		if (found->sym==sym) return found;
+		if (found->symbol==symbolToFind) return found;
 	}
 	return 0;
 }
 
-void CAbstractPPM::CPPMnode::AddChild(CPPMnode *pNewChild, int numSymbols) {
-	if (m_iNumChildSlots<0) {
-		m_ppChildren[pNewChild->sym] = pNewChild;
+void PPMLanguageModel::PPMNode::addChild(PPMNode *newChild, int numSymbols) {
+	if (numOfChildSlots<0) {
+		childrenArray[newChild->symbol] = newChild;
 	} else {
-		if (m_iNumChildSlots==0) {
-			m_iNumChildSlots = 1;
-			m_pChild = pNewChild;
+		if (numOfChildSlots==0) {
+			numOfChildSlots = 1;
+			child = newChild;
 			return;
-		} else if (m_iNumChildSlots==1) {
+		} else if (numOfChildSlots==1) {
 			//no room, have to resize...
-		} else if (m_iNumChildSlots<=MAX_RUN) {
-			for (int i = 0; i<m_iNumChildSlots; i++)
-				if (!m_ppChildren[i]) {
-					m_ppChildren[i] = pNewChild;
+		} else if (numOfChildSlots<=MAX_RUN) {
+			for (int i = 0; i<numOfChildSlots; i++)
+				if (!childrenArray[i]) {
+					childrenArray[i] = newChild;
 					return;
 				}
 		} else {
-			int start = pNewChild->sym;
+			int start = newChild->symbol;
 			//find length of run (including to-be-inserted element)...
-			while (m_ppChildren[start = (start+m_iNumChildSlots-1)%m_iNumChildSlots]);
-			int idx = pNewChild->sym;
-			while (m_ppChildren[idx %= m_iNumChildSlots]) ++idx;
+			while (childrenArray[start = (start+numOfChildSlots-1)%numOfChildSlots]);
+			int idx = newChild->symbol;
+			while (childrenArray[idx %= numOfChildSlots]) ++idx;
 			//found NULL
 			int stop = idx;
-			while (m_ppChildren[stop = (stop+1)%m_iNumChildSlots]);
+			while (childrenArray[stop = (stop+1)%numOfChildSlots]);
 			//start and idx point to NULLs (with inserted element somewhere inbetween)
-			int runLen = (m_iNumChildSlots+stop-(start+1))%m_iNumChildSlots;
+			int runLen = (numOfChildSlots+stop-(start+1))%numOfChildSlots;
 			if (runLen<=MAX_RUN) {
 				//ok, maintain size
-				m_ppChildren[idx] = pNewChild;
+				childrenArray[idx] = newChild;
 				return;
 			}
 		}
 		//resize!
-		CPPMnode **oldChildren = m_ppChildren;
-		int oldSlots = m_iNumChildSlots;
+		PPMNode **oldChildrenArray = childrenArray;
+		int oldSlots = numOfChildSlots;
 		int newNumElems;
-		if (m_iNumChildSlots>=numSymbols/4) {
-			m_iNumChildSlots = -numSymbols; // negative = "use direct indexing"
+		if (numOfChildSlots>=numSymbols/4) {
+			numOfChildSlots = -numSymbols; // negative = "use direct indexing"
 			newNumElems = numSymbols;
 		} else {
-			m_iNumChildSlots += m_iNumChildSlots+1;
-			newNumElems = m_iNumChildSlots;
+			numOfChildSlots += numOfChildSlots+1;
+			newNumElems = numOfChildSlots;
 		}
-		m_ppChildren = new CPPMnode*[newNumElems]; //null terminator
-		memset(m_ppChildren, 0, sizeof(CPPMnode*)*newNumElems);
-		if (oldSlots==1) AddChild((CPPMnode*) oldChildren, numSymbols);
+		childrenArray = new PPMNode*[newNumElems]; //null terminator
+		memset(childrenArray, 0, sizeof(PPMNode*)*newNumElems);
+		if (oldSlots==1) addChild((PPMNode*) oldChildrenArray, numSymbols);
 		else {
 			while (oldSlots-->0)
-				if (oldChildren[oldSlots]) AddChild(oldChildren[oldSlots],
-						numSymbols);
-			delete[] oldChildren;
+				if (oldChildrenArray[oldSlots]) addChild(oldChildrenArray[oldSlots], numSymbols);
+			delete[] oldChildrenArray;
 		}
-		AddChild(pNewChild, numSymbols);
+		addChild(newChild, numSymbols);
 	}
 }
 
-CAbstractPPM::CPPMnode* CAbstractPPM::AddSymbolToNode(CPPMnode *pNode, symbol sym) {
-	CPPMnode *pReturn = pNode->find_symbol(sym);
-	// std::cout << sym << ",";
+PPMLanguageModel::PPMLanguageModel(int numSyms, int maxOrder, bool updateExclusion, int alpha, int beta) :
+		numOfSymbolsPlusOne(numSyms+1), root(new PPMNode(-1)), contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192),
+		maxOrder(maxOrder), updateExclusion(updateExclusion), alpha(alpha), beta(beta) {
+	rootContext = contextAllocator.allocate();
+	rootContext->head = root;
+	rootContext->order = 0;
+}
+
+bool PPMLanguageModel::isValidContext(const Context context) const {
+	return setOfContexts.count((const PPMContext*) context)>0;
+}
+
+//Get the probability distribution at the context
+void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int> &probs, int norm, int uniform) const {
+	const PPMContext *ppmContext = (const PPMContext*) (context);
+	//DASHER_ASSERT(isValidContext(context));
+	probs.resize(numOfSymbolsPlusOne);
+	std::vector<bool> exclusions(numOfSymbolsPlusOne);
+	unsigned int toSpend = norm;
+	unsigned int uniformLeft = uniform;
+	//TODO: Sort out zero symbol case
+	probs[0] = 0;
+	exclusions[0] = false;
+	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
+		probs[i] = uniformLeft/(numOfSymbolsPlusOne-i);
+		uniformLeft -= probs[i];
+		toSpend -= probs[i];
+		exclusions[i] = false;
+	}
+	//DASHER_ASSERT(uniformLeft == 0);
+	//bool doExclusion = GetLongParameter(LP_LM_ALPHA);
+	bool doExclusion = 0; //FIXME
+	for (PPMNode *temp = ppmContext->head; temp; temp = temp->vine) {
+		int total = 0;
+		for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator++) {
+			Symbol sym = (*symbolIterator)->symbol;
+			if (!(exclusions[sym] && doExclusion)) total += (*symbolIterator)->count;
+		}
+		if (total) {
+			unsigned int sizeOfSlice = toSpend;
+			for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator++) {
+				if (!(exclusions[(*symbolIterator)->symbol] && doExclusion)) {
+					exclusions[(*symbolIterator)->symbol] = 1;
+					unsigned int p = static_cast<int64>(sizeOfSlice)*(100*(*symbolIterator)->count-beta)/(100*total+alpha);
+					probs[(*symbolIterator)->symbol] += p;
+					toSpend -= p;
+				}
+				// Usprintf(debug,TEXT("symbol %u counts %d p %u toSpend %u \n"), symbol, s->count, p, toSpend);
+				// DebugOutput(debug);
+			}
+		}
+	}
+	unsigned int size_of_slice = toSpend;
+	int symbolsleft = 0;
+	for (int i = 1; i<numOfSymbolsPlusOne; i++)
+		if (!(exclusions[i] && doExclusion)) symbolsleft++;
+	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
+		if (!(exclusions[i] && doExclusion)) {
+			unsigned int p = size_of_slice/symbolsleft;
+			probs[i] += p;
+			toSpend -= p;
+		}
+	}
+	int iLeft = numOfSymbolsPlusOne-1;
+	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
+		unsigned int p = toSpend/iLeft;
+		probs[i] += p;
+		--iLeft;
+		toSpend -= p;
+	}
+	//DASHER_ASSERT(toSpend == 0);
+}
+
+//Update context with symbol 'Symbol'
+void PPMLanguageModel::enterSymbol(Context c, int Symbol) {
+	if (Symbol==0) return;
+	//DASHER_ASSERT(Symbol >= 0 && Symbol < GetSize());
+	PPMContext &context = *(PPMContext*) (c);
+	while (context.head) {
+		if (context.order<maxOrder) { //Only try to extend the context if it's not going to make it too long
+			if (PPMNode *find = context.head->findSymbol(Symbol)) {
+				context.order++;
+				context.head = find;
+				//Usprintf(debug,TEXT("found context %x order %d\n"),head,order);
+				//DebugOutput(debug);
+				//std::cout << context.order << std::endl;
+				return;
+			}
+		}
+		//If we can't extend the current context, follow vine pointer to shorten it and try again
+		context.order--;
+		context.head = context.head->vine;
+	}
+	if (context.head==0) {
+		context.head = root;
+		context.order = 0;
+	}
+	//std::cout << context.order << std::endl;
+}
+
+//Add symbol to the context
+//Creates new nodes, updates counts, and leaves 'context' at the new context.
+void PPMLanguageModel::learnSymbol(Context c, int Symbol) {
+	if (Symbol==0) return;
+	//DASHER_ASSERT(Symbol >= 0 && Symbol < GetSize());
+	PPMContext &context = *(PPMContext*) (c);
+	PPMNode *n = addSymbolToNode(context.head, Symbol);
+	//DASHER_ASSERT(n == context.head->findSymbol(Symbol));
+	context.head = n;
+	context.order++;
+	while (context.order>maxOrder) {
+		context.head = context.head->vine;
+		context.order--;
+	}
+}
+
+PPMLanguageModel::PPMNode* PPMLanguageModel::addSymbolToNode(PPMNode *pNode, Symbol sym) {
+	PPMNode *pReturn = pNode->findSymbol(sym);
+	// std::cout << symbol << ",";
 	if (pReturn!=NULL) {
 		pReturn->count++;
-		if (!bUpdateExclusion) {
-			//update vine contexts too. Guaranteed to exist if child does!
-			for (CPPMnode *v = pReturn->vine; v; v = v->vine) {
-				//DASHER_ASSERT(v == m_pRoot || v->sym == sym);
+		if (!updateExclusion) {
+			//Update vine contexts too. Guaranteed to exist if child does!
+			for (PPMNode *v = pReturn->vine; v; v = v->vine) {
+				//DASHER_ASSERT(v == root || v->symbol == symbol);
 				v->count++;
 			}
 		}
 	} else {
 		//symbol does not exist at this level
 		pReturn = makeNode(sym); //count initialized to 1 but no vine pointer
-		pNode->AddChild(pReturn, GetSize());
-		pReturn->vine =
-				(pNode==m_pRoot) ? m_pRoot : AddSymbolToNode(pNode->vine, sym);
+		pNode->addChild(pReturn, numOfSymbolsPlusOne);
+		pReturn->vine = (pNode==root) ? root : addSymbolToNode(pNode->vine, sym);
 	}
 	return pReturn;
 }
 
-CPPMLanguageModel::CPPMLanguageModel(int iNumSyms) :
-		CAbstractPPM(iNumSyms, new CPPMnode(-1)), NodesAllocated(0), m_NodeAlloc(8192) {
-	//empty
-}
-
-CAbstractPPM::CPPMnode* CPPMLanguageModel::makeNode(int sym) {
-	CPPMnode *res = m_NodeAlloc.Alloc();
-	res->sym = sym;
-	++NodesAllocated;
+PPMLanguageModel::PPMNode* PPMLanguageModel::makeNode(int sym) {
+	PPMNode *res = nodeAllocator.allocate();
+	res->symbol = sym;
+	++numOfNodesAllocated;
 	return res;
 }

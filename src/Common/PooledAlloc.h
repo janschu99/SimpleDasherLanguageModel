@@ -1,46 +1,46 @@
 #ifndef __PooledAlloc_h__
 #define __PooledAlloc_h__
 
-// CPooledAlloc allocates objects T in fixed-size blocks (specified in the constructor) 
-// Alloc returns an uninitialized T*
-// Free returns an object to the pool
+#include "SimplePooledAllocator.h"
 
-#include "SimplePooledAlloc.h"
-
+// PooledAllocator allocates objects T in fixed-size blocks (specified in the constructor) 
+// allocate returns an uninitialized T*
+// free returns an object to the pool
 template<typename T>
-class CPooledAlloc {
+class PooledAllocator {
 	public:
-		// Construct with given block size
-		CPooledAlloc(size_t iBlockSize);
-		// Return an uninitialized object
-		T* Alloc();
-		// Return an object to the pool
-		void Free(T *pFree);
+		//Construct with given block size
+		PooledAllocator(size_t blockSize);
+		//Return an uninitialized object
+		T* allocate();
+		//Return an object to the pool
+		void free(T *elementToFree);
 	private:
-		// Use simple pooled alloc for the blocked allocation
-		CSimplePooledAlloc<T> m_Alloc;
-		// The free list
-		std::vector<T*> m_vpFree;
+		//Use simple pooled alloc for the blocked allocation
+		SimplePooledAllocator<T> simpleAllocator;
+		//The free list
+		std::vector<T*> freeList;
 };
 
 template<typename T>
-CPooledAlloc<T>::CPooledAlloc(size_t iSize) :
-		m_Alloc(iSize) {
+PooledAllocator<T>::PooledAllocator(size_t blockSize) :
+		simpleAllocator(blockSize) {
+	//empty
 }
 
 template<typename T>
-T* CPooledAlloc<T>::Alloc() {
-	if (m_vpFree.size()>0) {
-		T *pLast = m_vpFree.back();
-		m_vpFree.pop_back();
-		return pLast;
+T* PooledAllocator<T>::allocate() {
+	if (freeList.size()>0) {
+		T *lastElement = freeList.back();
+		freeList.pop_back();
+		return lastElement;
 	}
-	return m_Alloc.Alloc();
+	return simpleAllocator.allocate();
 }
 
 template<typename T>
-void CPooledAlloc<T>::Free(T *pFree) {
-	m_vpFree.push_back(pFree);
+void PooledAllocator<T>::free(T *elementToFree) {
+	freeList.push_back(elementToFree);
 }
 
-#endif // __include__
+#endif

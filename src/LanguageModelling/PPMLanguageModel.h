@@ -2,195 +2,130 @@
 #define __PPMLanguageModel_h__
 
 #include "../Common/DasherTypes.h"
-#include "../Common/NoClones.h"
 #include "../Common/PooledAlloc.h"
-#include "stdlib.h"
-#include <vector>
 #include <set>
 
 namespace Dasher {
 	
-	/// Common superclass for both PPM and PPMY language models. Implements the PPM tree,
-	/// inc. fast hashing of child nodes by symbol number; and entering and learning symbols
-	/// in a context, i.e. navigating and updating the tree, with update exclusion according
-	/// to LP_LM_UPDATE_EXCLUSION
-	/// Subclasses must implement CLanguageModel::GetProbs and a makeNode() method (perhaps
-	/// using a pooled allocator).
-	class CAbstractPPM: private NoClones {
-		protected:
+	//"Standard" PPM language model: getProbs uses counts in PPM child nodes.
+	//Implements the PPM tree, inc. fast hashing of child nodes by symbol number; and entering and
+	//learning symbols in a context, i.e. navigating and updating the tree, with optional update exclusion.
+	class PPMLanguageModel {
+		public:
+			//Index of registered context
+			typedef size_t Context;
+			PPMLanguageModel(int numSyms, int maxOrder, bool updateExclusion, int alpha, int beta);
+			Context createEmptyContext();
+			void releaseContext(Context context);
+			Context cloneContext(Context context);
+			void enterSymbol(Context context, int symbol);
+			void learnSymbol(Context context, int symbol);
+			bool isValidContext(const Context context) const;
+			void getProbs(Context context, std::vector<unsigned int> &probs, int norm, int uniform) const;
+		private:
 			class ChildIterator;
-			class CPPMnode {
-				private:
-					union {
-						CPPMnode **m_ppChildren;
-						CPPMnode *m_pChild;
-					};
-					///Elements in above array, including nulls, as follows:
-					/// (a) negative -> absolute value is number of elems in m_ppChildren, but use direct indexing
-					/// (b) 1 -> use m_pChild as direct pointer to CPPMnode (no array)
-					/// (c) 2-MAX_RUN -> m_ppChildren is unordered array of that many elems
-					/// (d) >MAX_RUN ->  m_ppChildren is an inline hash (overflow to next elem) with that many slots
-					int m_iNumChildSlots;
-					friend class CPPMLanguageModel;
+			class PPMNode {
 				public:
+					Symbol symbol;
+					PPMNode *vine;
+					unsigned short int count;
+					//default value for symbol doesn't seem to matter, previously there was a separate no-argument
+					//constructor which simply didn't initialize symbol, which created a warning
+					PPMNode(Symbol symbol = 0);
+					~PPMNode();
 					ChildIterator children() const;
 					const ChildIterator end() const;
-					void AddChild(CPPMnode *pNewChild, int numSymbols);
-					CPPMnode* find_symbol(symbol sym) const;
-					CPPMnode *vine;
-					unsigned short int count;
-					symbol sym;
-					CPPMnode(symbol sym);
-					CPPMnode();
-					virtual ~CPPMnode();
+					void addChild(PPMNode *newChild, int numSymbols);
+					PPMNode* findSymbol(Symbol sym) const;
+				private:
+					union {
+						PPMNode **childrenArray;
+						PPMNode *child;
+					};
+					//Elements in above array, including nulls, as follows:
+					// (a) negative -> absolute value is number of elems in 'childrenArray', but use direct indexing
+					// (b) 1 -> use 'child' as direct pointer to PPMNode (no array)
+					// (c) 2-MAX_RUN -> 'childrenArray' is unordered array of that many elems
+					// (d) >MAX_RUN -> 'childrenArray' is an inline hash (overflow to next elem) with that many slots
+					int numOfChildSlots;
 			};
 			class ChildIterator {
 				private:
-					void nxt() {
-						if (m_ppChild==m_ppStop) return;
-						while ((--m_ppChild)!=m_ppStop)
-							if (*m_ppChild) break;
+					void next() {
+						if (child==stop) return;
+						while ((--child)!=stop)
+							if (*child) break;
 					}
+					PPMNode *const*child, *const*stop;
 				public:
 					bool operator==(const ChildIterator &other) const {
-						return m_ppChild==other.m_ppChild && m_ppStop==other.m_ppStop;
+						return child==other.child && stop==other.stop;
 					}
 					bool operator!=(const ChildIterator &other) const {
-						return m_ppChild!=other.m_ppChild || m_ppStop!=other.m_ppStop;
+						return child!=other.child || stop!=other.stop;
 					}
-					CPPMnode* operator*() const {
-						return (m_ppChild==m_ppStop) ? NULL : *m_ppChild;
+					PPMNode* operator*() const {
+						return (child==stop) ? NULL : *child;
 					}
 					ChildIterator operator++(int) {
 						ChildIterator temp(*this);
-						nxt();
+						next();
 						return temp;
 					}
-					ChildIterator(CPPMnode *const*ppChild, CPPMnode *const*ppStop) :
-							m_ppChild(ppChild), m_ppStop(ppStop) {
-						nxt();
+					ChildIterator(PPMNode *const*ppChild, PPMNode *const*ppStop) :
+							child(ppChild), stop(ppStop) {
+						next();
 					}
-				private:
-					CPPMnode *const*m_ppChild, *const*m_ppStop;
 			};
-			
-			class CPPMContext {
+			class PPMContext {
 				public:
-					CPPMContext(CPPMContext const &input) {
-						head = input.head;
-						order = input.order;
-					}
-					CPPMContext(CPPMnode *_head = 0, int _order = 0) :
-							head(_head), order(_order) {
-					};
-					~CPPMContext() {
+					PPMContext() :
+							head(0), order(0) {
 						//empty
 					};
-					CPPMnode *head;
+					PPMNode *head;
 					int order;
 			};
-			
-			///Makes a new node, of whatever kind (subclass of CPPMnode, perhaps with extra info)
-			/// is required by the subclass, for the specified symbol. (Initial count will be 1.)
-			virtual CPPMnode* makeNode(int sym)=0;
-			/// \param iMaxOrder max order of model; anything <0 means to use LP_LM_MAX_ORDER.
-			CAbstractPPM(int iNumSyms, CPPMnode *pRoot, int iMaxOrder = -1);
-			CPPMContext *m_pRootContext;
-			CPPMnode *m_pRoot;
-			/// Cache parameters that don't make sense to adjust during the life of a language model...
-			const int m_iMaxOrder;
-			const bool bUpdateExclusion;
-			///Return the number of symbols over which we are making predictions, plus one
-			/// (to leave space for an initial 0).
-			int GetSize() const {
-				return m_iNumSyms+1;
-			}
-			const int m_iNumSyms;
-		public:
-			/// Index of registered context
-			typedef size_t Context;
-			virtual ~CAbstractPPM() {
-				//empty
-			};
-			Context CreateEmptyContext();
-			void ReleaseContext(Context context);
-			Context CloneContext(Context context);
-			virtual void EnterSymbol(Context context, int Symbol);
-			virtual void LearnSymbol(Context context, int Symbol);
-			bool isValidContext(const Context c) const;
-		private:
-			CPPMnode* AddSymbolToNode(CPPMnode *pNode, symbol sym);
-			CPooledAlloc<CPPMContext> m_ContextAlloc;
-			std::set<const CPPMContext*> m_setContexts;
+			//disallow default copy-constructor and assignment operator
+			PPMLanguageModel(const PPMLanguageModel&);
+			PPMLanguageModel& operator=(const PPMLanguageModel&);
+			//Makes a standard PPMNode, but using a pooled allocator (nodeAllocator) - faster!
+			PPMNode* makeNode(int sym);
+			PPMNode* addSymbolToNode(PPMNode *pNode, Symbol sym);
+			//The number of symbols over which we are making predictions, plus one
+			//(to leave space for an initial 0).
+			const int numOfSymbolsPlusOne;
+			PPMContext *rootContext;
+			PPMNode *root;
+			PooledAllocator<PPMContext> contextAllocator;
+			std::set<const PPMContext*> setOfContexts;
+			int numOfNodesAllocated;
+			mutable SimplePooledAllocator<PPMNode> nodeAllocator;
+			//Cache parameters that don't make sense to adjust during the life of a language model...
+			const int maxOrder;
+			const bool updateExclusion;
+			const int alpha;
+			const int beta;
 	};
 	
-	///"Standard" PPM language model: GetProbs uses counts in PPM child nodes,
-	/// universal alpha+beta values read from LP_LM_ALPHA and LP_LM_BETA,
-	/// max order from LP_LM_MAX_ORDER.
-	class CPPMLanguageModel: public CAbstractPPM {
-		public:
-			CPPMLanguageModel(int iNumSyms);
-			virtual void GetProbs(Context context, std::vector<unsigned int> &Probs, int norm, int iUniform) const;
-		protected:
-			/// Makes a standard CPPMnode, but using a pooled allocator (m_NodeAlloc) - faster!
-			virtual CPPMnode* makeNode(int sym);
-		private:
-			int NodesAllocated;
-			mutable CSimplePooledAlloc<CPPMnode> m_NodeAlloc;
-	};
-	
-	inline CAbstractPPM::ChildIterator CPPMLanguageModel::CPPMnode::children() const {
-		//if m_iNumChildSlots = 0 / 1, m_ppChildren is direct pointer, else ptr to array (of pointers)
-		CPPMnode *const*ppChild =
-				(m_iNumChildSlots==0||m_iNumChildSlots==1) ?
-						&m_pChild : m_ppChildren;
-		return ChildIterator(ppChild+abs(m_iNumChildSlots), ppChild-1);
+	inline PPMLanguageModel::Context PPMLanguageModel::createEmptyContext() {
+		PPMContext *allocatedContext = contextAllocator.allocate();
+		*allocatedContext = *rootContext;
+		setOfContexts.insert(allocatedContext);
+		return (Context) allocatedContext;
 	}
 	
-	inline const CAbstractPPM::ChildIterator CPPMLanguageModel::CPPMnode::end() const {
-		//if m_iNumChildSlots = 0 / 1, m_ppChildren is direct pointer, else ptr to array (of pointers)
-		CPPMnode *const*ppChild = (m_iNumChildSlots==0||m_iNumChildSlots==1) ? &m_pChild : m_ppChildren;
-		return ChildIterator(ppChild, ppChild-1);
+	inline void PPMLanguageModel::releaseContext(Context release) {
+		setOfContexts.erase(setOfContexts.find((PPMContext*) release));
+		contextAllocator.free((PPMContext*) release);
 	}
 	
-	inline Dasher::CAbstractPPM::CPPMnode::CPPMnode(symbol _sym) :
-			sym(_sym) {
-		vine = 0;
-		m_iNumChildSlots = 0;
-		m_ppChildren = NULL;
-		count = 1;
-	}
-	
-	inline CAbstractPPM::CPPMnode::CPPMnode() {
-		vine = 0;
-		m_iNumChildSlots = 0;
-		m_ppChildren = NULL;
-		count = 1;
-	}
-	
-	inline CAbstractPPM::CPPMnode::~CPPMnode() {
-		//single child = is direct pointer to node, not array...
-		if (m_iNumChildSlots!=1) delete[] m_ppChildren;
-	}
-	
-	inline CAbstractPPM::Context CAbstractPPM::CreateEmptyContext() {
-		CPPMContext *pCont = m_ContextAlloc.Alloc();
-		*pCont = *m_pRootContext;
-		m_setContexts.insert(pCont);
-		return (Context) pCont;
-	}
-	
-	inline CAbstractPPM::Context CAbstractPPM::CloneContext(Context Copy) {
-		CPPMContext *pCont = m_ContextAlloc.Alloc();
-		CPPMContext *pCopy = (CPPMContext*) Copy;
-		*pCont = *pCopy;
-		m_setContexts.insert(pCont);
-		return (Context) pCont;
-	}
-	
-	inline void CAbstractPPM::ReleaseContext(Context release) {
-		m_setContexts.erase(m_setContexts.find((CPPMContext*) release));
-		m_ContextAlloc.Free((CPPMContext*) release);
+	inline PPMLanguageModel::Context PPMLanguageModel::cloneContext(Context context) {
+		PPMContext *allocatedContext = contextAllocator.allocate();
+		PPMContext *copyOfContext = (PPMContext*) context;
+		*allocatedContext = *copyOfContext;
+		setOfContexts.insert(allocatedContext);
+		return (Context) allocatedContext;
 	}
 }
 

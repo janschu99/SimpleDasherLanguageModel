@@ -110,7 +110,7 @@ void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, AlphabetMap::Symbo
 int main() {
 	unsigned int numOfSymbols = 4;
 	
-	PPMLanguageModel lm(numOfSymbols, 5, true, 49, 77);
+	PPMLanguageModel lm(numOfSymbols, 5, true);
 	AlphabetMap* alphabetMap = getDefaultAlphabetMap();
 	std::ifstream trainingTextStream;
 	trainingTextStream.open("training.txt");
@@ -125,14 +125,14 @@ int main() {
 	std::cout << "Entering 'b':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
-	lm.getProbs(context, probs, 80);
+	lm.getProbs(context, probs, 49, 77, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'a':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, 80);
+	lm.getProbs(context, probs, 49, 77, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -140,7 +140,7 @@ int main() {
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, 80);
+	lm.getProbs(context, probs, 49, 77, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -149,7 +149,7 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, 80);
+	lm.getProbs(context, probs, 49, 77, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -159,13 +159,13 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, 80);
+	lm.getProbs(context, probs, 49, 77, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
 	std::cout << "\nLoading large training file...\n";
 	unsigned int numOfSymbolsLarge = 62;
-	PPMLanguageModel lmLarge(numOfSymbolsLarge, 5, true, 49, 77);
+	PPMLanguageModel lmLarge(numOfSymbolsLarge, 5, true);
 	AlphabetMap* alphabetMapLarge = getLargeAlphabetMap();
 	std::ifstream trainingTextStreamLarge;
 	trainingTextStreamLarge.open("trainingLarge3.txt");
@@ -180,7 +180,7 @@ int main() {
 	lmLarge.enterSymbol(context, 4);
 	lmLarge.enterSymbol(context, 3);
 	lmLarge.enterSymbol(context, 1);
-	lmLarge.getProbs(context, probs, 80);
+	lmLarge.getProbs(context, probs, 49, 77, 80);
 	printVector(probs);
 	lmLarge.releaseContext(context);
 	

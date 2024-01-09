@@ -8,9 +8,9 @@
 
 using namespace Dasher;
 
-PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion, int alpha, int beta) :
-		numOfSymbolsPlusOne(numOfSymbols+1), maxOrder(maxOrder), updateExclusion(updateExclusion), alpha(alpha),
-		beta(beta), root(new PPMNode(-1)), contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192) {
+PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion) :
+		numOfSymbolsPlusOne(numOfSymbols+1), maxOrder(maxOrder), updateExclusion(updateExclusion),
+		root(new PPMNode(-1)), contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192) {
 	rootContext=contextAllocator.allocate();
 	rootContext->head=root;
 	rootContext->order=0;
@@ -78,7 +78,7 @@ void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
 }
 
 //Get the probability distribution at the context
-void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int uniform) const {
+void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int alpha, int beta, int uniform) const {
 	//adapted from CAlphabetManager::GetProbs
 	static const int NORMALIZATION = 1<<16; //from CDasherModel
 	int numOfSymbols = numOfSymbolsPlusOne-1;

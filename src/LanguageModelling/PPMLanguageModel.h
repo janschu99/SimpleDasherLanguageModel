@@ -13,13 +13,13 @@ namespace Dasher {
 	class PPMLanguageModel {
 		public:
 			typedef size_t Context; //Index of registered context
-			PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion, int alpha, int beta);
+			PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion);
 			Context createEmptyContext();
 			Context cloneContext(Context context);
 			void releaseContext(Context context);
 			void enterSymbol(Context context, Symbol symbol);
 			void learnSymbol(Context context, Symbol symbol);
-			void getProbs(Context context, std::vector<unsigned int>& probs, int uniform) const;
+			void getProbs(Context context, std::vector<unsigned int>& probs, int alpha, int beta, int uniform) const;
 		private:
 			class PPMNode;
 			class ChildIterator;
@@ -30,8 +30,6 @@ namespace Dasher {
 			//Cache parameters that don't make sense to adjust during the life of a language model...
 			const int maxOrder;
 			const bool updateExclusion;
-			const int alpha;
-			const int beta;
 			PPMContext* rootContext;
 			PPMNode* root;
 			PooledAllocator<PPMContext> contextAllocator;

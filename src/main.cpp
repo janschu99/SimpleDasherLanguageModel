@@ -10,11 +10,11 @@ template <typename T>
 static void printVector(std::vector<T> v) {
 	std::size_t size = v.size();
 	T sum = 0;
-	for(std::size_t i = 0; i < size; ++i) {
+	for(std::size_t i = 0; i<size; i++) {
 		sum+=v[i];
 	}
 	std::cout << "Size: " << size << ", Sum: " << sum << "\n";
-	for(std::size_t i = 0; i < size; ++i) {
+	for(std::size_t i = 0; i<size; i++) {
 		std::cout << v[i] << "\n";
 	}
 }
@@ -112,7 +112,7 @@ AlphabetMap* getLargeAlphabetMap() {
 //adapted from CTrainer::Train
 void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, AlphabetMap::SymbolStream &syms) {
 	PPMLanguageModel::Context sContext = model->createEmptyContext();
-	for(Symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
+	for (Symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
 		model->learnSymbol(sContext, sym);
 	}
 	model->releaseContext(sContext);

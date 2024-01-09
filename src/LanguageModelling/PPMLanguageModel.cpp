@@ -78,7 +78,13 @@ void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
 }
 
 //Get the probability distribution at the context
-void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int norm) const {
+void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int uniform) const {
+	//adapted from CAlphabetManager::GetProbs
+	static const int NORMALIZATION = 1<<16; //from CDasherModel
+	int numOfSymbols = numOfSymbolsPlusOne-1;
+	int uniformAdd = std::max(1, (NORMALIZATION*uniform/1000)/numOfSymbols);
+	int norm = NORMALIZATION-numOfSymbols*uniformAdd; //non-uniform norm
+	//
 	const PPMContext* ppmContext = (const PPMContext*) context;
 	//DASHER_ASSERT(isValidContext(context)); //method removed, simply checked whether setOfContexts contains context
 	probs.assign(numOfSymbolsPlusOne, 0);
@@ -99,7 +105,6 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& prob
 		}
 	}
 	unsigned int sizeOfSlice = toSpend;
-	int numOfSymbols = numOfSymbolsPlusOne-1;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
 		unsigned int p = sizeOfSlice/numOfSymbols;
 		probs[i]+=p;

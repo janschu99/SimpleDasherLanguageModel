@@ -19,13 +19,6 @@ static void printVector(std::vector<T> v) {
 	}
 }
 
-static int getNorm(int numOfSymbols, int uniform) {
-	//adapted from CAlphabetManager::GetProbs
-	static const int NORMALIZATION = 1<<16; //from CDasherModel
-	const int iUniformAdd = std::max(1, (NORMALIZATION*uniform/1000)/numOfSymbols);
-	return NORMALIZATION-numOfSymbols*iUniformAdd; //non-uniform norm
-}
-
 //Reading alphabet definitions from xml files has been left out because it is irrelevant for the core data structure
 //and algorithm. For testing purposes, simply hardcode a small alphabet.
 AlphabetMap* getDefaultAlphabetMap() {
@@ -116,8 +109,6 @@ void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, AlphabetMap::Symbo
 
 int main() {
 	unsigned int numOfSymbols = 4;
-	unsigned long norm = getNorm(numOfSymbols, 80);
-	std::cout << "Norm for " << numOfSymbols << " symbols: " << norm << "\n";
 	
 	PPMLanguageModel lm(numOfSymbols, 5, true, 49, 77);
 	AlphabetMap* alphabetMap = getDefaultAlphabetMap();
@@ -134,14 +125,14 @@ int main() {
 	std::cout << "Entering 'b':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
-	lm.getProbs(context, probs, norm);
+	lm.getProbs(context, probs, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'a':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, norm);
+	lm.getProbs(context, probs, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -149,7 +140,7 @@ int main() {
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, norm);
+	lm.getProbs(context, probs, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -158,7 +149,7 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, norm);
+	lm.getProbs(context, probs, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -168,15 +159,12 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, norm);
+	lm.getProbs(context, probs, 80);
 	printVector(probs);
 	lm.releaseContext(context);
 	
 	std::cout << "\nLoading large training file...\n";
 	unsigned int numOfSymbolsLarge = 62;
-	unsigned long normLarge = getNorm(numOfSymbolsLarge, 80);
-	std::cout << "Norm for " << numOfSymbolsLarge << " symbols: " << normLarge << "\n";
-
 	PPMLanguageModel lmLarge(numOfSymbolsLarge, 5, true, 49, 77);
 	AlphabetMap* alphabetMapLarge = getLargeAlphabetMap();
 	std::ifstream trainingTextStreamLarge;
@@ -192,7 +180,7 @@ int main() {
 	lmLarge.enterSymbol(context, 4);
 	lmLarge.enterSymbol(context, 3);
 	lmLarge.enterSymbol(context, 1);
-	lmLarge.getProbs(context, probs, normLarge);
+	lmLarge.getProbs(context, probs, 80);
 	printVector(probs);
 	lmLarge.releaseContext(context);
 

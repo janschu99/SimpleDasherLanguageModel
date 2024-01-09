@@ -173,7 +173,7 @@ int main() {
 	train(&lmLarge, alphabetMapLarge, symStreamLarge);
 	trainingTextStreamLarge.close();
 	delete alphabetMapLarge;
-
+	
 	std::cout << "\nEntering 'bdca' in large:\n";
 	context = lmLarge.createEmptyContext();
 	lmLarge.enterSymbol(context, 2);
@@ -183,6 +183,6 @@ int main() {
 	lmLarge.getProbs(context, probs, 80);
 	printVector(probs);
 	lmLarge.releaseContext(context);
-
+	
 	return 0;
 }

@@ -81,11 +81,7 @@ void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
 void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int norm) const {
 	const PPMContext* ppmContext = (const PPMContext*) context;
 	//DASHER_ASSERT(isValidContext(context)); //method removed, simply checked whether setOfContexts contains context
-	probs.resize(numOfSymbolsPlusOne);
-	//TODO: Sort out zero symbol case
-	for (int i = 0; i<numOfSymbolsPlusOne; i++) {
-		probs[i] = 0;
-	}
+	probs.assign(numOfSymbolsPlusOne, 0);
 	unsigned int toSpend = norm;
 	for (PPMNode* temp = ppmContext->head; temp!=NULL; temp=temp->vine) {
 		int total = 0;

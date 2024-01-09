@@ -34,7 +34,6 @@ namespace Dasher {
 			PPMNode* root;
 			PooledAllocator<PPMContext> contextAllocator;
 			std::set<const PPMContext*> setOfContexts;
-			int numOfNodesAllocated;
 			SimplePooledAllocator<PPMNode> nodeAllocator;
 			//disallow default copy-constructor and assignment operator
 			PPMLanguageModel(const PPMLanguageModel&);

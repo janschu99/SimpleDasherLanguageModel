@@ -108,8 +108,10 @@ void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, AlphabetMap::Symbo
 }
 
 int main() {
+	int alpha = 49;
+	int beta = 77;
+	int uniform = 80;
 	unsigned int numOfSymbols = 4;
-	
 	PPMLanguageModel lm(numOfSymbols, 5, true);
 	AlphabetMap* alphabetMap = getDefaultAlphabetMap();
 	std::ifstream trainingTextStream;
@@ -125,14 +127,14 @@ int main() {
 	std::cout << "Entering 'b':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
-	lm.getProbs(context, probs, 49, 77, 80);
+	lm.getProbs(context, probs, alpha, beta, uniform);
 	printVector(probs);
 	lm.releaseContext(context);
 	
 	std::cout << "\nEntering 'a':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, 49, 77, 80);
+	lm.getProbs(context, probs, alpha, beta, uniform);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -140,7 +142,7 @@ int main() {
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, 49, 77, 80);
+	lm.getProbs(context, probs, alpha, beta, uniform);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -149,7 +151,7 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
-	lm.getProbs(context, probs, 49, 77, 80);
+	lm.getProbs(context, probs, alpha, beta, uniform);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -159,7 +161,7 @@ int main() {
 	lm.enterSymbol(context, 4);
 	lm.enterSymbol(context, 3);
 	lm.enterSymbol(context, 1);
-	lm.getProbs(context, probs, 49, 77, 80);
+	lm.getProbs(context, probs, alpha, beta, uniform);
 	printVector(probs);
 	lm.releaseContext(context);
 	
@@ -180,7 +182,7 @@ int main() {
 	lmLarge.enterSymbol(context, 4);
 	lmLarge.enterSymbol(context, 3);
 	lmLarge.enterSymbol(context, 1);
-	lmLarge.getProbs(context, probs, 49, 77, 80);
+	lmLarge.getProbs(context, probs, alpha, beta, uniform);
 	printVector(probs);
 	lmLarge.releaseContext(context);
 	

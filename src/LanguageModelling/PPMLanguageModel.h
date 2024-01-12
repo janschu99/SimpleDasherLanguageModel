@@ -27,7 +27,6 @@ namespace Dasher {
 			//The number of symbols over which we are making predictions, plus one
 			//(to leave space for an initial 0).
 			const int numOfSymbolsPlusOne;
-			//Cache parameters that don't make sense to adjust during the life of a language model...
 			const int maxOrder;
 			const bool updateExclusion;
 			PPMContext* rootContext;
@@ -38,17 +37,17 @@ namespace Dasher {
 			//disallow default copy-constructor and assignment operator
 			PPMLanguageModel(const PPMLanguageModel&);
 			PPMLanguageModel& operator=(const PPMLanguageModel&);
-			//Makes a standard PPMNode, but using a pooled allocator (nodeAllocator) - faster!
-			PPMNode* makeNode(Symbol symbol);
-			PPMNode* addSymbolToNode(PPMNode *pNode, Symbol symbol);
+			PPMNode* makeNode(Symbol symbol); //makes a standard PPMNode, but using a pooled
+			                                  //allocator (nodeAllocator) - faster!
+			PPMNode* addSymbolToNode(PPMNode* node, Symbol symbol);
 			class PPMNode {
 				public:
 					Symbol symbol;
 					PPMNode* vine;
 					unsigned short int count;
-					//default value for symbol doesn't seem to matter, previously there was a separate no-argument
-					//constructor which simply didn't initialize symbol, which created a warning
-					PPMNode(Symbol symbol = 0);
+					PPMNode(Symbol symbol = 0); //default value for symbol doesn't seem to matter, previously
+					                            //there was a separate no-argument constructor which simply 
+					                            //didn't initialize symbol, which created a warning
 					~PPMNode();
 					ChildIterator children() const;
 					const ChildIterator end() const;

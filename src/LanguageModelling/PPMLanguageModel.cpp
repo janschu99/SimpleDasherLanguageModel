@@ -67,9 +67,9 @@ void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
 	if (symbol==0) return;
 	//DASHER_ASSERT(symbol>=0 && symbol<GetSize());
 	PPMContext& context = *(PPMContext*) c;
-	PPMNode* n = addSymbolToNode(context.head, symbol);
-	//DASHER_ASSERT(n==context.head->findSymbol(symbol));
-	context.head=n;
+	PPMNode* node = addSymbolToNode(context.head, symbol);
+	//DASHER_ASSERT(node==context.head->findSymbol(symbol));
+	context.head=node;
 	context.order++;
 	while (context.order>maxOrder) {
 		context.head=context.head->vine;
@@ -180,8 +180,8 @@ void PPMLanguageModel::PPMNode::addChild(PPMNode* newChild, int numSymbols) {
 			//no room, have to resize...
 		} else if (numOfChildSlots<=MAX_RUN) {
 			for (int i = 0; i<numOfChildSlots; i++)
-				if (!childrenArray[i]) {
-					childrenArray[i] = newChild;
+				if (childrenArray[i]==NULL) {
+					childrenArray[i]=newChild;
 					return;
 				}
 		} else {

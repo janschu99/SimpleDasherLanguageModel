@@ -28,14 +28,6 @@ void PPMLanguageModel::releaseContext(Context release) {
 	contextAllocator.free((PPMContext*) release);
 }
 
-PPMLanguageModel::Context PPMLanguageModel::cloneContext(Context context) {
-	PPMContext* allocatedContext = contextAllocator.allocate();
-	PPMContext* copyOfContext = (PPMContext*) context;
-	*allocatedContext=*copyOfContext;
-	setOfContexts.insert(allocatedContext);
-	return (Context) allocatedContext;
-}
-
 //Update context with symbol 'symbol'
 void PPMLanguageModel::enterSymbol(Context c, Symbol symbol) {
 	if (symbol==0) return;

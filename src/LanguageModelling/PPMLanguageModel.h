@@ -15,7 +15,6 @@ namespace Dasher {
 			typedef size_t Context; //Index of registered context
 			PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion);
 			Context createEmptyContext();
-			Context cloneContext(Context context);
 			void releaseContext(Context context);
 			void enterSymbol(Context context, Symbol symbol);
 			void learnSymbol(Context context, Symbol symbol);

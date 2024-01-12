@@ -105,7 +105,9 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& prob
 	int left = numOfSymbols;
 	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
 		unsigned int p = toSpend/left;
-		probs[i]+=p;
+		probs[i]+=p+uniformAdd; //Note: Adding the uniform distribution ("Smoothing") is not part of
+		                        //the language model in the Dasher sources, but is done afterwards
+		                        //in CAlphabetManager::GetProbs
 		left--;
 		toSpend-=p;
 	}

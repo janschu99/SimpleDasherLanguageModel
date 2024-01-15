@@ -1,9 +1,10 @@
 #ifndef PPM_LANGUAGE_MODEL_INCLUDED
 #define PPM_LANGUAGE_MODEL_INCLUDED
 
-#include <set>
 #include "../Common/DasherTypes.h"
 #include "../Common/PooledAllocator.h"
+#include <set>
+#include <vector>
 
 namespace Dasher {
 	
@@ -29,7 +30,7 @@ namespace Dasher {
 			PPMNode* root;
 			PooledAllocator<PPMContext> contextAllocator;
 			std::set<const PPMContext*> setOfContexts;
-			SimplePooledAllocator<PPMNode> nodeAllocator;
+			PooledAllocator<PPMNode> nodeAllocator;
 			//disallow default copy-constructor and assignment operator
 			PPMLanguageModel(const PPMLanguageModel&);
 			PPMLanguageModel& operator=(const PPMLanguageModel&);

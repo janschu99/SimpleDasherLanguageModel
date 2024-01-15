@@ -23,9 +23,7 @@ namespace Dasher {
 			class PPMNode;
 			class ChildIterator;
 			class PPMContext;
-			//The number of symbols over which we are making predictions, plus one
-			//(to leave space for an initial 0).
-			const int numOfSymbolsPlusOne;
+			const int numOfSymbols; //The number of symbols over which we are making predictions
 			const int maxOrder;
 			PPMContext* rootContext;
 			PPMNode* root;

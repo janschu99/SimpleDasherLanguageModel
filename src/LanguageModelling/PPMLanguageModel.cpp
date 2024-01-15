@@ -9,8 +9,8 @@
 using namespace Dasher;
 
 PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder) :
-		numOfSymbolsPlusOne(numOfSymbols+1), maxOrder(maxOrder),
-		root(new PPMNode(-1)), contextAllocator(1024), nodeAllocator(8192) {
+		numOfSymbols(numOfSymbols), maxOrder(maxOrder), root(new PPMNode(-1)),
+		contextAllocator(1024), nodeAllocator(8192) {
 	rootContext=contextAllocator.allocate();
 	rootContext->head=root;
 	rootContext->order=0;
@@ -73,13 +73,12 @@ void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
 void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int alpha, int beta, int uniform) const {
 	//adapted from CAlphabetManager::GetProbs
 	static const int NORMALIZATION = 1<<16; //from CDasherModel
-	int numOfSymbols = numOfSymbolsPlusOne-1;
 	int uniformAdd = std::max(1, (NORMALIZATION*uniform/1000)/numOfSymbols);
 	int norm = NORMALIZATION-numOfSymbols*uniformAdd; //non-uniform norm
 	//
 	const PPMContext* ppmContext = (const PPMContext*) context;
 	//DASHER_ASSERT(isValidContext(context)); //method removed, simply checked whether setOfContexts contains context
-	probs.assign(numOfSymbolsPlusOne, 0);
+	probs.assign(numOfSymbols+1, 0);
 	unsigned int toSpend = norm;
 	for (PPMNode* temp = ppmContext->head; temp!=NULL; temp=temp->vine) {
 		int total = 0;
@@ -97,13 +96,13 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& prob
 		}
 	}
 	unsigned int sizeOfSlice = toSpend;
-	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
+	for (int i = 1; i<=numOfSymbols; i++) {
 		unsigned int p = sizeOfSlice/numOfSymbols;
 		probs[i]+=p;
 		toSpend-=p;
 	}
 	int left = numOfSymbols;
-	for (int i = 1; i<numOfSymbolsPlusOne; i++) {
+	for (int i = 1; i<=numOfSymbols; i++) {
 		unsigned int p = toSpend/left;
 		probs[i]+=p+uniformAdd; //Note: Adding the uniform distribution ("Smoothing") is not part of
 		                        //the language model in the Dasher sources, but is done afterwards
@@ -127,7 +126,7 @@ PPMLanguageModel::PPMNode* PPMLanguageModel::addSymbolToNode(PPMNode* node, Symb
 	} else {
 		//symbol does not exist at this level
 		returnVal=makeNode(symbol); //count initialized to 1 but no vine pointer
-		node->addChild(returnVal, numOfSymbolsPlusOne);
+		node->addChild(returnVal, numOfSymbols+1);
 		returnVal->vine=(node==root ? root : addSymbolToNode(node->vine, symbol));
 	}
 	return returnVal;

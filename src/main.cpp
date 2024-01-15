@@ -1,4 +1,5 @@
 #include "LanguageModelling/PPMLanguageModel.h"
+#include "Alphabet/SymbolStream.h"
 #include "Alphabet/AlphabetMap.h"
 #include <vector>
 #include <fstream>
@@ -97,9 +98,9 @@ AlphabetMap* getLargeAlphabetMap() {
 	return map;
 }
 
-//construct a AlphabetMap::SymbolStream by passing a std::istream to its constructor (see CTrainer::Parse)
+//construct a SymbolStream by passing a std::istream to its constructor (see CTrainer::Parse)
 //adapted from CTrainer::Train
-void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, AlphabetMap::SymbolStream &syms) {
+void train(PPMLanguageModel* model, AlphabetMap* alphabetMap, SymbolStream &syms) {
 	PPMLanguageModel::Context sContext = model->createEmptyContext();
 	for (Symbol sym; (sym=syms.next(alphabetMap))!=-1;) {
 		model->learnSymbol(sContext, sym);
@@ -116,7 +117,7 @@ int main() {
 	AlphabetMap* alphabetMap = getDefaultAlphabetMap();
 	std::ifstream trainingTextStream;
 	trainingTextStream.open("training.txt");
-	AlphabetMap::SymbolStream symStream(trainingTextStream);
+	SymbolStream symStream(trainingTextStream);
 	train(&lm, alphabetMap, symStream);
 	trainingTextStream.close();
 	delete alphabetMap;
@@ -171,7 +172,7 @@ int main() {
 	AlphabetMap* alphabetMapLarge = getLargeAlphabetMap();
 	std::ifstream trainingTextStreamLarge;
 	trainingTextStreamLarge.open("trainingLarge3.txt");
-	AlphabetMap::SymbolStream symStreamLarge(trainingTextStreamLarge);
+	SymbolStream symStreamLarge(trainingTextStreamLarge);
 	train(&lmLarge, alphabetMapLarge, symStreamLarge);
 	trainingTextStreamLarge.close();
 	delete alphabetMapLarge;

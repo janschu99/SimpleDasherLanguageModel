@@ -14,7 +14,6 @@ namespace Dasher {
 			//key: text of the symbol; must not be present already
 			//value: symbol number to which that text should be mapped
 			void add(const std::string &key, Symbol value);
-			void addParagraphSymbol(Symbol value);
 			//Returns the symbol associated with 'key' or Undefined.
 			Symbol get(const std::string &key) const;
 			Symbol getSingleChar(char key) const;
@@ -52,9 +51,6 @@ namespace Dasher {
 			std::vector<Entry> entries;
 			std::vector<Entry*> hashTable;
 			Symbol *singleChars;
-			//Both "\r\n" and "\n" are mapped to this (if not Undefined).
-			//This is the only case where >1 character can map to a symbol.
-			Symbol paragraphSymbol;
 			// A standard hash -- could try and research something specific.
 			inline unsigned int hash(const std::string &input) const {
 				unsigned int result = 0;

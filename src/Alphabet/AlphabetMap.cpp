@@ -16,17 +16,7 @@ AlphabetMap::SymbolStream::SymbolStream(std::istream &in) :
 Symbol AlphabetMap::SymbolStream::next(const AlphabetMap *map) {
 	int numChars = findNext();
 	if (numChars==0) return -1; //EOF
-	if (numChars==1) {
-		if (map->paragraphSymbol!=UNKNOWN_SYMBOL && buf[pos]=='\r') {
-			//DASHER_ASSERT(pos+1<len || len<1024); //there are more characters
-			//(we should have read utf8...max_length), or else input is exhausted
-			if (pos+1<len && buf[pos+1]=='\n') {
-				pos += 2;
-				return map->paragraphSymbol;
-			}
-		}
-		return map->getSingleChar(buf[pos++]);
-	}
+	if (numChars==1) return map->getSingleChar(buf[pos++]);
 	Symbol sym = map->get(std::string(&buf[pos], numChars));
 	pos += numChars;
 	return sym;
@@ -83,8 +73,7 @@ int AlphabetMap::SymbolStream::getUtf8Count(int pos) {
 	return 0;
 }
 
-AlphabetMap::AlphabetMap(unsigned int initialTableSize) :
-		hashTable(initialTableSize<<1), paragraphSymbol(UNKNOWN_SYMBOL) {
+AlphabetMap::AlphabetMap(unsigned int initialTableSize) : hashTable(initialTableSize<<1) {
 	entries.reserve(initialTableSize);
 	// TODO: fix the code so it works if char is signed.
 	const int numChars = std::numeric_limits<char>::max()+1;
@@ -133,15 +122,7 @@ void AlphabetMap::add(const std::string &key, Symbol value) {
 	hashEntry = &entries.back();
 }
 
-void AlphabetMap::addParagraphSymbol(Symbol value) {
-	//DASHER_ASSERT (paragraphSymbol==UNKNOWN_SYMBOL);
-	//DASHER_ASSERT (singleChars['\r'] == UNKNOWN_SYMBOL);
-	//DASHER_ASSERT (singleChars['\n'] == UNKNOWN_SYMBOL);
-	singleChars['\n'] = paragraphSymbol = value;
-}
-
 Symbol AlphabetMap::get(const std::string &key) const {
-	if (paragraphSymbol!=UNKNOWN_SYMBOL && key=="\r\n") return paragraphSymbol;
 	//DASHER_ASSERT(m_utf8_count_array[key[0]]==key.length());
 	if (key.length()==1) return getSingleChar(key[0]);
 	//Loop through entries with the correct hash value.

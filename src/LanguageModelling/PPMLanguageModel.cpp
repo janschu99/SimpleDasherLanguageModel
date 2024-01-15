@@ -1,6 +1,7 @@
 #include "PPMLanguageModel.h"
 
 #include <stdlib.h> //for abs
+#include <stdint.h>
 #include <string.h> //for memset
 #include <set>
 
@@ -88,7 +89,7 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& prob
 		if (total!=0) {
 			unsigned int sizeOfSlice = toSpend;
 			for (ChildIterator symbolIterator = temp->children(); symbolIterator!=temp->end(); symbolIterator.next()) {
-				unsigned int p = static_cast<int64>(sizeOfSlice)*(100*(*symbolIterator)->count-beta)/(100*total+alpha);
+				unsigned int p = static_cast<int64_t>(sizeOfSlice)*(100*(*symbolIterator)->count-beta)/(100*total+alpha);
 				probs[(*symbolIterator)->symbol]+=p;
 				toSpend-=p;
 				//printf("symbol %u counts %d p %u toSpend %u \n", symbol, s->count, p, toSpend);

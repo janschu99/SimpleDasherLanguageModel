@@ -15,7 +15,6 @@ class PooledAllocator {
 		class Pool;
 		std::vector<Pool*> pools; //list of pools (=blocks)
 		size_t blockSize;
-		int currentPos;
 		std::vector<T*> freeList; //list of freed entries (in all pools combined)
 		class Pool {
 			public:
@@ -37,8 +36,7 @@ class PooledAllocator {
 };
 
 template<typename T>
-PooledAllocator<T>::PooledAllocator(size_t blockSize) :
-		blockSize(blockSize), currentPos(0) {
+PooledAllocator<T>::PooledAllocator(size_t blockSize) : blockSize(blockSize) {
 	pools.push_back(new Pool(blockSize)); //create first pool
 }
 
@@ -56,11 +54,10 @@ T* PooledAllocator<T>::allocate() {
 		return lastElement;
 	}
 	//no more free entries, allocate a new one in the current pool
-	T* p = pools[currentPos]->allocate();
+	T* p = pools.back()->allocate();
 	if (p!=NULL) return p; //allocation successful, return
 	//allocation failed since current pool is full, create new pool and allocate there
 	pools.push_back(new Pool(blockSize));
-	currentPos++;
 	return pools.back()->allocate();
 }
 

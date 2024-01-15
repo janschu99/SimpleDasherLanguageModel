@@ -6,17 +6,17 @@
 
 using namespace Dasher;
 
-SymbolStream::SymbolStream(std::istream &in) :
+SymbolStream::SymbolStream(std::istream& in) :
 		pos(0), len(0), in(in) {
 	readMore();
 }
 
-Symbol SymbolStream::next(const AlphabetMap *map) {
+Symbol SymbolStream::next(const AlphabetMap* map) {
 	int numChars = findNext();
 	if (numChars==0) return -1; //EOF
 	if (numChars==1) return map->getSingleChar(buf[pos++]);
 	Symbol sym = map->get(std::string(&buf[pos], numChars));
-	pos += numChars;
+	pos+=numChars;
 	return sym;
 }
 
@@ -26,9 +26,9 @@ int SymbolStream::findNext() {
 			//may need more bytes for next char
 			if (pos) {
 				//shift remaining bytes to beginning
-				len -= pos; //len of them
+				len-=pos; //len of them
 				memmove(buf, &buf[pos], len);
-				pos = 0;
+				pos=0;
 			}
 			//and look for more
 			readMore();
@@ -53,10 +53,10 @@ void SymbolStream::readMore() {
 	//len is first unfilled byte
 	in.read(&buf[len], 1024-len);
 	if (in.good()) {
-		//DASHER_ASSERT(in.gcount() == 1024-len);
-		len = 1024;
+		//DASHER_ASSERT(in.gcount()==1024-len);
+		len=1024;
 	} else {
-		len += in.gcount();
+		len+=in.gcount();
 		//DASHER_ASSERT(len<1024);
 		//next attempt to read more will fail.
 	}

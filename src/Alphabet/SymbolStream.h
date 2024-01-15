@@ -8,15 +8,16 @@
 namespace Dasher {
 	class SymbolStream {
 		public:
-			SymbolStream(std::istream &in);
+			SymbolStream(std::istream& in);
 			//Gets the next symbol in the stream, using the specified AlphabetMap
 			//to convert unicode characters to symbols.
 			//Returns 0 for unknown symbol (not in map); -1 for EOF; else symbol#.
-			Symbol next(const AlphabetMap *map);
+			Symbol next(const AlphabetMap* map);
 		private:
 			char buf[1024];
-			off_t pos, len;
-			std::istream &in;
+			off_t pos;
+			off_t len;
+			std::istream& in;
 			//Finds beginning of next unicode character, at position 'pos' or later,
 			//filling buffer and skipping invalid characters as necessary.
 			//Leaves 'pos' pointing at beginning of said character.

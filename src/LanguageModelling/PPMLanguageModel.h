@@ -13,7 +13,7 @@ namespace Dasher {
 	class PPMLanguageModel {
 		public:
 			typedef size_t Context; //Index of registered context
-			PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion);
+			PPMLanguageModel(int numOfSymbols, int maxOrder);
 			Context createEmptyContext();
 			void releaseContext(Context context);
 			void enterSymbol(Context context, Symbol symbol);
@@ -27,7 +27,6 @@ namespace Dasher {
 			//(to leave space for an initial 0).
 			const int numOfSymbolsPlusOne;
 			const int maxOrder;
-			const bool updateExclusion;
 			PPMContext* rootContext;
 			PPMNode* root;
 			PooledAllocator<PPMContext> contextAllocator;

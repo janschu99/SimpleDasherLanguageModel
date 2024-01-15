@@ -8,8 +8,8 @@
 
 using namespace Dasher;
 
-PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder, bool updateExclusion) :
-		numOfSymbolsPlusOne(numOfSymbols+1), maxOrder(maxOrder), updateExclusion(updateExclusion),
+PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder) :
+		numOfSymbolsPlusOne(numOfSymbols+1), maxOrder(maxOrder),
 		root(new PPMNode(-1)), contextAllocator(1024), nodeAllocator(8192) {
 	rootContext=contextAllocator.allocate();
 	rootContext->head=root;
@@ -124,13 +124,6 @@ PPMLanguageModel::PPMNode* PPMLanguageModel::addSymbolToNode(PPMNode* node, Symb
 	PPMNode* returnVal = node->findSymbol(symbol);
 	if (returnVal!=NULL) {
 		returnVal->count++;
-		if (!updateExclusion) {
-			//Update vine contexts too. Guaranteed to exist if child does!
-			for (PPMNode* v = returnVal->vine; v!=NULL; v=v->vine) {
-				//DASHER_ASSERT(v==root || v->symbol==symbol);
-				v->count++;
-			}
-		}
 	} else {
 		//symbol does not exist at this level
 		returnVal=makeNode(symbol); //count initialized to 1 but no vine pointer

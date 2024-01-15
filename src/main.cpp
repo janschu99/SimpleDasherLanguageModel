@@ -112,7 +112,7 @@ int main() {
 	int beta = 77;
 	int uniform = 80;
 	unsigned int numOfSymbols = 4;
-	PPMLanguageModel lm(numOfSymbols, 5, true);
+	PPMLanguageModel lm(numOfSymbols, 5);
 	AlphabetMap* alphabetMap = getDefaultAlphabetMap();
 	std::ifstream trainingTextStream;
 	trainingTextStream.open("training.txt");
@@ -167,7 +167,7 @@ int main() {
 	
 	std::cout << "\nLoading large training file...\n";
 	unsigned int numOfSymbolsLarge = 62;
-	PPMLanguageModel lmLarge(numOfSymbolsLarge, 5, true);
+	PPMLanguageModel lmLarge(numOfSymbolsLarge, 5);
 	AlphabetMap* alphabetMapLarge = getLargeAlphabetMap();
 	std::ifstream trainingTextStreamLarge;
 	trainingTextStreamLarge.open("trainingLarge3.txt");

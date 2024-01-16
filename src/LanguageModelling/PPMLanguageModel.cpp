@@ -11,7 +11,7 @@ using namespace Dasher;
 
 PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder) :
 		numOfSymbols(numOfSymbols), maxOrder(maxOrder), root(new PPMNode(-1)),
-		contextAllocator(1024), nodeAllocator(8192) {
+		contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192) {
 	rootContext=contextAllocator.allocate();
 	rootContext->head=root;
 	rootContext->order=0;
@@ -114,9 +114,14 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& prob
 	//DASHER_ASSERT(toSpend==0);
 }
 
+int PPMLanguageModel::getNumOfNodesAllocated() const {
+	return numOfNodesAllocated;
+}
+
 PPMLanguageModel::PPMNode* PPMLanguageModel::makeNode(Symbol symbol) {
 	PPMNode* res = nodeAllocator.allocate();
 	res->symbol=symbol;
+	numOfNodesAllocated++;
 	return res;
 }
 

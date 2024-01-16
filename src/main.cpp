@@ -122,11 +122,13 @@ int main() {
 	train(&lm, alphabetMap, symStream);
 	trainingTextStream.close();
 	delete alphabetMap;
+	int numOfNodesAllocated = lm.getNumOfNodesAllocated();
+	std::cout << "Training done, allocated " << numOfNodesAllocated << " nodes.\n";
 	
 	PPMLanguageModel::Context context;
 	std::vector<unsigned int> probs;
 	
-	std::cout << "Entering 'b':\n";
+	std::cout << "\nEntering 'b':\n";
 	context = lm.createEmptyContext();
 	lm.enterSymbol(context, 2);
 	lm.getProbs(context, probs, alpha, beta, uniform);
@@ -177,6 +179,8 @@ int main() {
 	train(&lmLarge, alphabetMapLarge, symStreamLarge);
 	trainingTextStreamLarge.close();
 	delete alphabetMapLarge;
+	int numOfNodesAllocatedLarge = lmLarge.getNumOfNodesAllocated();
+	std::cout << "Training on large done, allocated " << numOfNodesAllocatedLarge << " nodes.\n";
 	
 	std::cout << "\nEntering 'bdca' in large:\n";
 	context = lmLarge.createEmptyContext();

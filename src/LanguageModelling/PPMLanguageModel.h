@@ -20,6 +20,7 @@ namespace Dasher {
 			void enterSymbol(Context context, Symbol symbol);
 			void learnSymbol(Context context, Symbol symbol);
 			void getProbs(Context context, std::vector<unsigned int>& probs, int alpha, int beta, int uniform) const;
+			int getNumOfNodesAllocated() const;
 		private:
 			class PPMNode;
 			class ChildIterator;
@@ -30,6 +31,7 @@ namespace Dasher {
 			PPMNode* root;
 			PooledAllocator<PPMContext> contextAllocator;
 			std::set<const PPMContext*> setOfContexts;
+			int numOfNodesAllocated;
 			PooledAllocator<PPMNode> nodeAllocator;
 			//disallow default copy-constructor and assignment operator
 			PPMLanguageModel(const PPMLanguageModel&);

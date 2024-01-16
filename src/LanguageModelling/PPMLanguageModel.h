@@ -10,7 +10,7 @@ namespace Dasher {
 	
 	//"Standard" PPM language model: getProbs uses counts in PPM child nodes.
 	//Implements the PPM tree, including fast hashing of child nodes by symbol number; and entering and
-	//learning symbols in a context, i.e. navigating and updating the tree, with optional update exclusion.
+	//learning symbols in a context, i.e. navigating and updating the tree, with update exclusion.
 	class PPMLanguageModel {
 		public:
 			typedef size_t Context; //Index of registered context

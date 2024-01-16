@@ -14,9 +14,9 @@ namespace Dasher {
 			//Returns 0 for unknown symbol (not in map); -1 for EOF; else symbol#.
 			Symbol next(const AlphabetMap* map);
 		private:
-			char buf[1024];
+			char buffer[1024];
 			off_t pos;
-			off_t len;
+			off_t validBufferLength;
 			std::istream& in;
 			//Finds beginning of next unicode character, at position 'pos' or later,
 			//filling buffer and skipping invalid characters as necessary.
@@ -25,7 +25,7 @@ namespace Dasher {
 			//(including where the file ends with an incomplete character)
 			int findNext();
 			void readMore();
-			int getUtf8Count(int pos);
+			int getUTF8Length(int firstByte);
 	};
 }
 

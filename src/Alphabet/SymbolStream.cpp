@@ -14,67 +14,63 @@
 
 using namespace Dasher;
 
-SymbolStream::SymbolStream(std::istream& in) :
-		pos(0), len(0), in(in) {
+SymbolStream::SymbolStream(std::istream& in) : pos(0), validBufferLength(0), in(in) {
 	readMore();
 }
 
 Symbol SymbolStream::next(const AlphabetMap* map) {
-	int numChars = findNext();
-	if (numChars==0) return -1; //EOF
-	if (numChars==1) return map->getSingleChar(buf[pos++]);
-	Symbol sym = map->get(std::string(&buf[pos], numChars));
-	pos+=numChars;
-	return sym;
+	int utf8Length = findNext();
+	if (utf8Length==0) return -1; //EOF
+	if (utf8Length==1) return map->getSingleChar(buffer[pos++]);
+	Symbol symbol = map->get(std::string(&buffer[pos], utf8Length));
+	pos+=utf8Length;
+	return symbol;
 }
 
 int SymbolStream::findNext() {
-	for (;;) {
-		if (pos+4>len) { //4 is max length of an UTF-8 char
-			//may need more bytes for next char
-			if (pos) {
-				//shift remaining bytes to beginning
-				len-=pos; //len of them
-				memmove(buf, &buf[pos], len);
+	while (true) {
+		if (pos+4>validBufferLength) { //4 is max length of an UTF-8 char
+			//may need more bytes for next char, so...
+			if (pos>0) { //...shift remaining bytes to the beginning of buffer...
+				validBufferLength-=pos; //length of them
+				memmove(buffer, &buffer[pos], validBufferLength);
 				pos=0;
 			}
-			//and look for more
-			readMore();
+			
+			readMore(); //...and look for more
 		}
-		//if still don't have any chars after attempting to read more...EOF!
-		if (pos==len) return 0; //EOF
-		if (int numChars = getUtf8Count(buf[pos])) {
-			if (pos+numChars>len) {
+		if (pos==validBufferLength) return 0; //still don't have any chars after attempting to read more, EOF
+		if (int utf8Length = getUTF8Length(buffer[pos])) {
+			if (pos+utf8Length>validBufferLength) {
 				//no more bytes in file (would have tried to read earlier), but not enough for char
 				printf("File ends with incomplete UTF-8 character beginning 0x%x (expecting %i bytes but only %li)\n",
-						static_cast<unsigned int>(buf[pos]&0xff), numChars, len-pos);
+						static_cast<unsigned int>(buffer[pos]&0xff), utf8Length, validBufferLength-pos);
 				return 0;
 			}
-			return numChars;
+			return utf8Length;
 		}
-		printf("Read invalid UTF-8 character 0x%x\n", static_cast<unsigned int>(buf[pos]&0xff));
-		++pos;
+		printf("Read invalid UTF-8 character 0x%x\n", static_cast<unsigned int>(buffer[pos]&0xff));
+		pos++;
 	}
 }
 
 void SymbolStream::readMore() {
-	//len is first unfilled byte
-	in.read(&buf[len], ARRAY_LENGTH(buf)-len);
-	if (in.good()) {
-		//DASHER_ASSERT(in.gcount()==ARRAY_LENGTH(buf)-len);
-		len=ARRAY_LENGTH(buf);
-	} else {
-		len+=in.gcount();
-		//DASHER_ASSERT(len<ARRAY_LENGTH(buf));
-		//next attempt to read more will fail.
+	//'validBufferLength' is first unfilled byte
+	in.read(&buffer[validBufferLength], ARRAY_LENGTH(buffer)-validBufferLength);
+	if (in.good()) { //read full buffer
+		//DASHER_ASSERT(in.gcount()==ARRAY_LENGTH(buffer)-validBufferLength);
+		validBufferLength=ARRAY_LENGTH(buffer);
+	} else { //couldn't fill whole buffer, next attempt to read more will fail
+		validBufferLength+=in.gcount();
+		//DASHER_ASSERT(validBufferLength<ARRAY_LENGTH(buffer));
 	}
 }
 
-int SymbolStream::getUtf8Count(int pos) {
-	if (pos<=0x7f) return 1;
-	if (pos<=0xc1) return 0;
-	if (pos<=0xdf) return 2;
-	if (pos<=0xef) return 3;
-	if (pos<=0xf4) return 4;
+int SymbolStream::getUTF8Length(int firstByte) {
+	if (firstByte<=0x7f) return 1;
+	if (firstByte<=0xc1) return 0;
+	if (firstByte<=0xdf) return 2;
+	if (firstByte<=0xef) return 3;
+	if (firstByte<=0xf4) return 4;
 	return 0;
 }

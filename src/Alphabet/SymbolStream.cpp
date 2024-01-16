@@ -4,6 +4,14 @@
 #include <string>
 #include <cstring> //for memmove
 
+//Note: The following macro doesn't work for arrays passed as function parameter
+//because those "decay" into a simple pointer and the size information is lost.
+//Also, the array must actually be declared as an array and not as a simple pointer
+//(which is usually equivalent, but not in this case):
+// char data1[] = "Test"; will work correctly (and also count the terminating 0-char), but
+// char* data2 = "Test"; won't work (and ARRAY_LENGTH(data2) should result in a compiler warning).
+#define ARRAY_LENGTH(array) (sizeof(array)/sizeof(*(array)))
+
 using namespace Dasher;
 
 SymbolStream::SymbolStream(std::istream& in) :
@@ -51,13 +59,13 @@ int SymbolStream::findNext() {
 
 void SymbolStream::readMore() {
 	//len is first unfilled byte
-	in.read(&buf[len], 1024-len);
+	in.read(&buf[len], ARRAY_LENGTH(buf)-len);
 	if (in.good()) {
-		//DASHER_ASSERT(in.gcount()==1024-len);
-		len=1024;
+		//DASHER_ASSERT(in.gcount()==ARRAY_LENGTH(buf)-len);
+		len=ARRAY_LENGTH(buf);
 	} else {
 		len+=in.gcount();
-		//DASHER_ASSERT(len<1024);
+		//DASHER_ASSERT(len<ARRAY_LENGTH(buf));
 		//next attempt to read more will fail.
 	}
 }

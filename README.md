@@ -1,0 +1,2 @@
+# SimpleDasherLanguageModel #
+This repo contains a greatly simplified version of the PPM language modeling code used in the text entry system *Dasher* (available at [https://github.com/dasher-project/dasher/tree/master/Src/DasherCore](https://github.com/dasher-project/dasher/tree/master/Src/DasherCore)), along with some sample inputs and the prediction results. It's intended to serve as a reference for other PPM implementations.

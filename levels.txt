@@ -1,0 +1,36 @@
+level 0 (20210209):
+- Extracted relevant code files related to PPM language model from dasher source files.
+- Minor code modifications to remove dependencies to other files to make the code compile, but kept modifications at a minimum.
+- Created a small test program that constructs a language model and a context, adds a short hardcoded sequence of symbols and then computes the probability distribution for the next symbol - looks plausible.
+
+level 1 (20210223):
+- Created subfolders for different parts of the program.
+- Added code for alphabet handling from the dasher source files. Again, modifications have been kept at a minimum to make the code compile, so there is still lots of unnecessarily complex code that isn't actually needed (currently 16 files totaling 1192 non-blank and non-comment lines of code, according to cloc). Reading alphabet definitions from XML files has been left out because it is irrelevant for the algorithm and core data structure.
+- Extended the test program to include a small hardcoded alphabet map and be able to train a language model by reading from a training text file, following how it is done in the dasher sources.
+- Added a few hardcoded test case that enter a short sequence of characters into the language model and then compute the probability distribution for the next symbol. Their output has been archived in a text file, together with the used training text and norm, to be able to compare the output of future levels to ensure that code simplification hasn't broken anything.
+
+level 2 (20210224):
+- Converted into an eclipse project to make future development easier.
+- Unified code formatting to make the code easier to read.
+- Removed several unused functions and declarations. Now only 10 files remain, out of 16 on level 1. Test cases still pass.
+- Added an alphabet map containing all alphanumeric characters and a performance test to measure training speed on large files. Useful to see any performance differences caused by changes in AlphabetMap.
+
+level 3 (20210225):
+- Simplified UTF-8 handling in AlphabetMap.
+- Various other cleanups and simplifications. Now down to 9 files totaling 814 non-blank and non-comment lines of code, according to cloc.
+- Removed the LanguageModel abstraction layer (since there is only one model in this test, the PPM model) and the functions to read/write binary representations of the PPM model from/to files. Both may be readded later when they are needed, but are irrelevant to the core data structure and algorithm for now.
+
+level 4 (20210226):
+- Removed the CAbstractPPM class as there was only one class extending it. Functionality of these two classes has been merged.
+- Several other small simplifications. Now down to 8 files totaling 751 non-blank and non-comment lines of code, according to cloc. Probably cannot get much shorter without changing the algorithm significantly.
+- Renamed most classes, fields and functions to match (Java) naming conventions and make the code easier to read. Not quite finished yet.
+
+level 5 (20210303):
+- Some more simplification and cleanup. Now down to 733 non-blank and non-comment lines of code, according to cloc.
+
+##
+What remains:
+- Rewrite AlphabetMap. Hash functions are really confusing and the map isn't that large actually, could try an approach with binary search on an (ordered) list of unicode values.
+- Check width of integer types and unify them where it makes sense.
+- If future extension is wanted, extract relevant code files related to handling the node tree from the dasher sources. This would really create a usable program. Writing test cases without a GUI to display the tree could be hard, though.
+##

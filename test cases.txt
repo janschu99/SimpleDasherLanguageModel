@@ -1,0 +1,164 @@
++++ Test Cases +++
+
+## Norm: ##
+(2^16*80)/1000/4=1310(,72)
+2^16-4*1310=60296
+
+## Training: ##
+aaabbcddcdbaacbdcdabcdabccbaddabbaa
+
+## Result: ##
+Entering 'b':
+Size: 5, Sum: 60296
+0
+25136
+9036
+17087
+9037
+
+Entering 'a':
+Size: 5, Sum: 60296
+0
+25136
+17086
+9037
+9037
+
+Entering 'bc':
+Size: 5, Sum: 60296
+0
+4472
+12329
+9915
+33580
+
+Entering 'ddc':
+Size: 5, Sum: 60296
+0
+3290
+9070
+4371
+43565
+
+Entering 'bdca':
+Size: 5, Sum: 60296
+0
+25136
+17086
+9037
+9037
+
++++ Performance test +++
+training on 30,5 MB random text: Dasher ca. 24s
+
++++ New results as of 12 Jan 2024 (incl. uniform): +++
+Training done, allocated 134 nodes.
+
+Entering 'b':
+Size: 5, Sum: 65536
+0
+26446
+10346
+18397
+10347
+
+Entering 'a':
+Size: 5, Sum: 65536
+0
+26446
+18396
+10347
+10347
+
+Entering 'bc':
+Size: 5, Sum: 65536
+0
+5782
+13639
+11225
+34890
+
+Entering 'ddc':
+Size: 5, Sum: 65536
+0
+4600
+10380
+5681
+44875
+
+Entering 'bdca':
+Size: 5, Sum: 65536
+0
+26446
+18396
+10347
+10347
+
+Loading large training file...
+Training on large done, allocated 76762080 nodes.
+
+Entering 'bdca' in large:
+Size: 63, Sum: 65536
+0
+365
+1772
+387
+497
+916
+492
+911
+493
+350
+934
+1795
+493
+10224
+884
+487
+1359
+912
+1795
+493
+504
+912
+487
+917
+901
+1354
+471
+1332
+939
+1370
+912
+493
+901
+432
+1332
+1354
+2215
+928
+917
+934
+906
+917
+939
+487
+917
+912
+912
+873
+912
+917
+895
+1789
+383
+1370
+410
+482
+476
+906
+493
+2220
+1359
+388
+509

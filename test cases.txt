@@ -52,7 +52,7 @@ Size: 5, Sum: 60296
 training on 30,5 MB random text: Dasher ca. 24s
 
 +++ New results as of 12 Jan 2024 (incl. uniform): +++
-Training done, allocated 134 nodes.
+Training done, allocated 135 nodes.
 
 Entering 'b':
 Size: 5, Sum: 65536
@@ -95,7 +95,7 @@ Size: 5, Sum: 65536
 10347
 
 Loading large training file...
-Training on large done, allocated 76762080 nodes.
+Training on large done, allocated 76762081 nodes.
 
 Entering 'bdca' in large:
 Size: 63, Sum: 65536

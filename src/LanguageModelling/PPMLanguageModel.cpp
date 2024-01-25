@@ -11,7 +11,8 @@ using namespace Dasher;
 
 PPMLanguageModel::PPMLanguageModel(int numOfSymbols, int maxOrder) :
 		numOfSymbols(numOfSymbols), maxOrder(maxOrder), root(new PPMNode(-1)),
-		contextAllocator(1024), numOfNodesAllocated(0), nodeAllocator(8192) {
+		contextAllocator(1024), numOfNodesAllocated(1), //count root node
+		nodeAllocator(8192) {
 	rootContext=contextAllocator.allocate();
 	rootContext->head=root;
 	rootContext->order=0;

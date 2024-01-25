@@ -97,9 +97,9 @@ void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& prob
 			}
 		}
 	}
-	unsigned int sizeOfSlice = toSpend;
+	unsigned int sizeOfSlice2 = toSpend;
 	for (int i = 1; i<=numOfSymbols; i++) {
-		unsigned int p = sizeOfSlice/numOfSymbols;
+		unsigned int p = sizeOfSlice2/numOfSymbols;
 		probs[i]+=p;
 		toSpend-=p;
 	}

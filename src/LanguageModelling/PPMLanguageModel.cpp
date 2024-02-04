@@ -35,7 +35,7 @@ void PPMLanguageModel::enterSymbol(Context c, Symbol symbol) {
 	if (symbol==0) return;
 	//DASHER_ASSERT(symbol>=0 && symbol<GetSize());
 	PPMContext& context = *(PPMContext*) c;
-	while (context.head!=NULL) {
+	while (true) {
 		if (context.order<maxOrder) { //Only try to extend the context if it's not going to make it too long
 			PPMNode* find = context.head->findSymbol(symbol);
 			if (find!=NULL) {
@@ -46,12 +46,11 @@ void PPMLanguageModel::enterSymbol(Context c, Symbol symbol) {
 			}
 		}
 		//If we can't extend the current context, follow vine pointer to shorten it and try again
+		PPMNode* vine = context.head->vine;
+		if (vine==NULL) return; //head is already at root, cannot shorten further
 		context.order--;
-		context.head=context.head->vine;
+		context.head=vine;
 	}
-	//If we got here, head is null, so reset to root (empty context)
-	context.head=root;
-	context.order=0;
 }
 
 //Add symbol to the context

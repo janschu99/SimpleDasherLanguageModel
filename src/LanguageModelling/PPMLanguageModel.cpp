@@ -75,7 +75,7 @@ void PPMLanguageModel::learnSymbol(Context c, Symbol symbol) {
 void PPMLanguageModel::getProbs(Context context, std::vector<unsigned int>& probs, int alpha, int beta, int uniform) const {
 	//adapted from CAlphabetManager::GetProbs
 	static const int NORMALIZATION = 1<<16; //from CDasherModel
-	int uniformAdd = std::max(1, (NORMALIZATION*uniform/1000)/numOfSymbols);
+	int uniformAdd = std::max(1, NORMALIZATION*uniform/1000/numOfSymbols);
 	int norm = NORMALIZATION-numOfSymbols*uniformAdd; //non-uniform norm
 	//
 	const PPMContext* ppmContext = (const PPMContext*) context;

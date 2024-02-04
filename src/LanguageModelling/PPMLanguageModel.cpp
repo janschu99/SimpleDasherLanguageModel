@@ -49,10 +49,9 @@ void PPMLanguageModel::enterSymbol(Context c, Symbol symbol) {
 		context.order--;
 		context.head=context.head->vine;
 	}
-	if (context.head==NULL) {
-		context.head=root;
-		context.order=0;
-	}
+	//If we got here, head is null, so reset to root (empty context)
+	context.head=root;
+	context.order=0;
 }
 
 //Add symbol to the context
